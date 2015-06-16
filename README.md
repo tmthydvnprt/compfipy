@@ -1,2 +1,3 @@
 # compfipy
-computational finance in python
+
+Computational Finance in Python
