@@ -53,16 +53,18 @@ def merton_jump_diffusion(time=500, dt=(1.0 / 252.0), sigma=2, gbm_mu=0.5, jd_mu
     gbm = geometric_brownian_motion(time, dt, sigma, gbm_mu)
     return gbm + jd
 
-def heston_volatility(time=500, dt=(1.0 / 252.0), sigma=2, gbm_mu=0.5, jd_mu=0.0, jd_sigma=0.3, jd_lambda=0.1):
-    pass
+# def heston_volatility(time=500, dt=(1.0 / 252.0), sigma=2, gbm_mu=0.5, jd_mu=0.0, jd_sigma=0.3, jd_lambda=0.1):
+#     """ return asset price whose returnes evolve according to
+#     geometric brownian motion with jump diffusion and non constant volatility"""
+#     pass
 
-def generate_ochlv(prices=None, ochl_mu=0.0, ochl_sigma=0.1, v_mu=100000, v_sigma=math.sqrt(10000), pct_time=0.1):
+def generate_ochlv(prices=None, ochl_mu=0.0, ochl_sigma=0.1, v_mu=100000, v_sigma=math.sqrt(10000)):
     """turn asset price into standard data"""
 
     ochlv = pd.DataFrame({'Close':prices})
     ochlv['Open'] = prices + prices * np.random.normal(loc=ochl_mu, scale=ochl_sigma, size=prices.shape)
     ochlv['High'] = prices + prices * np.random.normal(loc=ochl_mu, scale=ochl_sigma, size=prices.shape)
-    ochlv['Low']  = prices + prices * np.random.normal(loc=ochl_mu, scale=ochl_sigma, size=prices.shape)
+    ochlv['Low'] = prices + prices * np.random.normal(loc=ochl_mu, scale=ochl_sigma, size=prices.shape)
     ochlv['Volume'] = v_mu * np.abs(prices.pct_change(2).shift(-2).ffill()) \
                     + np.random.normal(loc=v_mu, scale=v_sigma, size=prices.shape)
 
