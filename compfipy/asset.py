@@ -164,8 +164,12 @@ class Asset(object):
         return len(self.close())
 
     def plot(self):
-        """Plot it"""
+        """Wrapper for pandas plot()"""
         self.data.plot()
+
+    def describe(self):
+        """Wrapper for pandas describe()"""
+        self.data.describe()
 
     def close(self):
         """Return closing price of asset"""
