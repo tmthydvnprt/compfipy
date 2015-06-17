@@ -165,11 +165,20 @@ class Asset(object):
 
     def plot(self):
         """Wrapper for pandas plot()"""
-        self.data.plot()
+        self.data[['Open', 'Close', 'High', 'Low']].plot()
+        self.data[['Volume']].plot()
 
     def describe(self):
         """Wrapper for pandas describe()"""
         self.data.describe()
+
+    def time_range(self, start=None, end=dt.date.today()):
+        """get a specific time range of data"""
+        if isinstance(start, dt.date) and isinstance(end, dt.date):
+            date_range = pd.date_range(start, end)
+        else:
+            date_range = pd.date_range(end - dt.timedelta(days=start), periods=start, freq='D')
+        return Asset(self.symbol, self.data.loc[date_range])
 
     def close(self):
         """Return closing price of asset"""
@@ -405,7 +414,7 @@ class Asset(object):
         l3 = l2 + size
         l4 = l3 + size
         l5 = l4 + size
-        return pd.DataFrame({'1': l1, '2': l2, '3': l3, 'l4': l4, 'l5': l5})
+        return pd.DataFrame({'1': l1, '2': l2, '3': l3, '4': l4, '5': l5})
 
     def true_range(self):
         """Calculate true range:
