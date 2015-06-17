@@ -286,7 +286,7 @@ class Asset(object):
             'high_price_channel'       : price_channel['high'],
             'low_price_channel'        : price_channel['low'],
             'center_price_channel'     : price_channel['center'],
-            # 'volume_by_price'        : self.volume_by_price(),
+            'volume_by_price'          : self.volume_by_price(),
             'vwap'                     : self.volume_weighted_average_price(),
             'zigzag'                   : self.zigzag(),
             'adl'                      : self.accumulation_distribution_line(),
@@ -565,18 +565,19 @@ class Asset(object):
         volume = self.volume()
         nday_closing_high = pd.rolling_max(close, n).bfill()
         nday_closing_low = pd.rolling_min(close, n).bfill()
-        # compute price blocks: high low range in block number steps
+        # compute price blocks: rolling high low range in block number steps
         price_blocks = pd.DataFrame()
         for low, high, in zip(nday_closing_low, nday_closing_high):
             price_blocks = price_blocks.append(pd.DataFrame(np.linspace(low, high, block_num)).T)
-        price_blocks = price_blocks.reset_index(drop=True)
+        price_blocks = price_blocks.set_index(close.index)
         # find correct block for each price, then tally that days volume
-        volume_by_price = pd.DataFrame(np.zeros((len(close), block_num)))
-        for j in range(n-1, len(close)):
+        volume_by_price = pd.DataFrame(np.zeros((close.shape[0], block_num)))
+        for j in range(n-1, close.shape[0]):
             for i, c in enumerate(close[j-(n-1):j+1]):
-                block = len((c >= price_blocks.iloc[i, :])[(c >= price_blocks.iloc[i, :]) == True]) - 1
+                block = (price_blocks.iloc[i, :] <= c).sum() - 1
                 block = 0 if block < 0 else block
                 volume_by_price.iloc[j, block] = volume[i] + volume_by_price.iloc[j, block]
+        volume_by_price = volume_by_price.set_index(close.index)
         return volume_by_price
 
     def volume_weighted_average_price(self):
@@ -907,8 +908,8 @@ class Asset(object):
         return np.sqrt(pd.rolling_sum(percent_draw_down * percent_draw_down, n) / n)
 
     def ultimate_oscillator(self, n1=7, n2=14, n3=28):
-        """ultimate_oscillator"""
-        bp = self.close() - np.min(self.low(), self.close().shift(1))
+        """Ultimate Oscillator"""
+        bp = self.close() - pd.DataFrame([self.low(), self.close().shift(1)]).min()
         hc_max = pd.DataFrame({'a': self.high(), 'b': self.close().shift(1)}, index=bp.index).max(1)
         lc_min = pd.DataFrame({'a': self.low(), 'b': self.close().shift(1)}, index=bp.index).min(1)
         tr = hc_max - lc_min
