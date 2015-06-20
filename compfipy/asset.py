@@ -8,14 +8,20 @@ import datetime as dt
 import pandas as pd
 import numpy as np
 import scipy.stats
+import collections
 
 # constants
+DEFAULT_INITIAL_PRICE - 100
+DAYS_IN_YEAR = DAYS_IN_YEAR
+DAYS_IN_TRADING_YEAR = 252.0
+MONTHS_IN_YEAR = 12.0
+
 FIBONACCI_DECIMAL = np.array([0, 0.236, 0.382, 0.5, 0.618, 1])
 FIBONACCI_SEQUENCE = [0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233]
-RANK_DAYS = [200, 125, 50, 20, 3, 14]
+RANK_DAYS_IN_TRADING_YEAR = [200, 125, 50, 20, 3, 14]
 RANK_PERCENTS = [0.3, 0.3, 0.15, 0.15, 0.5, 0.5]
 
-# general average functions
+# general price helper functions
 def sma(x, n=20):
     """ return simple moving average pandas data, x, over interval, n."""
     return pd.rolling_mean(x, n)
@@ -23,6 +29,22 @@ def sma(x, n=20):
 def ema(x, n=20):
     """ return exponential moving average pandas data, x, over interval, n."""
     return pd.ewma(x, n)
+
+def calc_returns(x):
+    """calculate arithmetic returns of price series"""
+    return x / x.shift(1) - 1
+
+def calc_log_returns(x):
+    """calculate log returns of price series"""
+    return np.log(x / x.shift(1)))
+
+def calc_price(x, x0=DEFAULT_INITIAL_PRICE):
+    """calculate price from returns series"""
+    return (x.replace(to_replace=np.nan, value=0) + 1).cumprod() * x0
+
+def rebase_price(x, x=DEFAULT_INITIAL_PRICE):
+    """convert a series to another initial price"""
+    return x0 * x / x.ix[0]
 
 # helper functions for Fibonacci code
 def fibonacci_retracement(price=0.0, lastprice=0.0):
@@ -312,6 +334,55 @@ class Asset(object):
                                        last close
         """
         return self.rate_of_change(n)
+
+    def drawdown(self):
+        """calucate the drawdown from the highest high"""
+
+        # don't change original data
+        draw_down = self.close.copy()
+
+        # fill missing data
+        draw_down = draw_down.ffill()
+
+        # ignore initial NaNs
+        draw_down[np.isnan(draw_down)] = -np.Inf
+
+        # get highest high
+        highest_high = pd.expanding_max(draw_down)
+        draw_down = (draw_down / highest_high) - 1
+        return draw_down
+
+    def drawdown_info(self):
+        """return table of drawdown data"""
+        drawdown = self.drawdown()
+        is_zero = drawdown == 0
+
+        # find start and end time
+        start = ~is_zero & is_zero.shift(1)
+        start = list(start[start == True].index)
+        end = is_zero & (~is_zero).shift(1)
+        end = list(end[end == True].index)
+
+        # handle no ending
+        if len(end) is 0:
+            end.append(drawdown.index[-1])
+
+        # handle startingin drawdown
+        if start[0] > end[0]:
+            start.insert(0, drawdown.index[0])
+
+        # handle finishing with drawdown
+        if start[-1] > end[-1]:
+            end.append(drawdown.index[-1])
+
+        info = pd.DataFrame({
+            'start': start,
+            'end'  : end,
+            'days' : [(e - s).days for s, e in zip(start, end)],
+            'drawdown':[drawdown[s:e].min() for s, e in zip(start, end)]
+        })
+
+        return info
 
     # Overlays :
     # ----------
@@ -721,7 +792,7 @@ class Asset(object):
 
     def stock_charts_tech_ranks(self, n=None, w=None):
         """stock_charts_tech_ranks"""
-        n = n if n else RANK_DAYS
+        n = n if n else RANK_DAYS_IN_TRADING_YEAR
         w = w if w else RANK_PERCENTS
         close = self.close
         long_ma = 100 * (1 - close / ema(close, n[0]))
@@ -933,8 +1004,8 @@ class Asset(object):
         returns = self.returns(periods=periods, freq=freq).fillna(0)
         return 100.0 * (scipy.stats.gmean(1.0 + returns) - 1.0)
 
-    def rate_of_return(self, periods=252, freq=None):
-        """rate of return over time period freq, default to yearly (252 days)"""
+    def rate_of_return(self, periods=DAYS_IN_TRADING_YEAR, freq=None):
+        """rate of return over time period freq, default to yearly (DAYS_IN_TRADING_YEAR days)"""
         returns = self.returns(periods=periods, freq=freq).fillna(0)
         return returns / periods
 
@@ -949,7 +1020,7 @@ class Asset(object):
         start = start if start else 0
         return 100.0 * self.price_change(start=start, end=end) / self.close[start]
 
-    def return_on_investment(self, periods=252, freq=None):
+    def return_on_investment(self, periods=DAYS_IN_TRADING_YEAR, freq=None):
         """return on investment"""
         pass
 
@@ -959,7 +1030,7 @@ class Asset(object):
         start = start if start else 0
         enddate = vti.close.index[end]
         startdate = vti.close.index[start]
-        years = (endate - startdate).days / 365.25
+        years = (endate - startdate).days / DAYS_IN_YEAR
         return np.power((self.close[end] / self.close[start]), (1.0 / years)) - 1.0
 
     def cagr(self, start=None, end=None):
@@ -970,17 +1041,134 @@ class Asset(object):
     # ------------------
     def deviation_risk(self):
         """deviation risk"""
-        return np.std(self.returns())
+        return self.returns().std()
 
     # Risk Adjusted Performance :
     # ---------------------------
-    def sharpe_ratio(self):
-        """sharpe_ratio"""
+    def risk_return_ratio(self):
+        """sharpe ratio w/o risk-free rate"""
         daily_ret = self.returns()
-        return np.sqrt(252) * np.mean(daily_ret) / np.std(daily_ret)
+        return np.sqrt(DAYS_IN_TRADING_YEAR) * daily_ret.mean() / daily_ret.std()
 
-    def bias_ratio(self):
-        """bias_ratio"""
+    def information_ratio(self, benchmark):
+        """caluculate the information ratio relative to a benchmark"""
+        diff_returns = self.returns() - benchmark.returns()
+        diff_std = diff_returns.std()
+
+        if np.isnan(diff_std) or diff_std == 0:
+            return 0.0
+        else:
+            return diff_returns.mean() / diff_std
+
+    # Summary stats :
+    # ---------------
+    def calc_stats(self, daily_risk_free_return=0.0):
+        """calculate common statistics for this asset"""
+        stats = {}
+
+        # sample prices
+        daily_price = self.close
+        monthy_price = self.close.resample('M', 'last')
+        yearly_price = self.close.resample('A', 'last')
+
+        # stats with daily prices
+        r = self.returns()
+
+        if len(r) < 4:
+            return stats
+
+        stats['daily_mean'] = DAYS_IN_TRADING_YEAR * r.mean()
+        stats['daily_vol'] = np.sqrt(DAYS_IN_TRADING_YEAR) * r.std()
+        stats['daily_sharpe'] = (stats['daily_mean'] - daily_risk_free_return) / stats['daily_vol']
+        stats['best_day'] = daily_price.ix[r.idxmax():r.idxmax()]
+        stats['worst_day'] = daily_price.ix[r.idxmin():r.idxmin()]
+        stats['total_return'] = self.return_change()
+        stats['ytd'] = stats['total_return']
+        stats['cagr'] = self.cagr()
+        stats['incep'] = stats['cagr']
+        drawdown_info = self.drawdown_info()
+        stats['max_drawdown'] = drawdown_info['drawdown'].min()
+        stats['avg_drawdown'] = drawdown_info['drawdown'].mean()
+        stats['avg_drawdown_days'] = drawdown_info['days'].mean()
+        stats['daily_skew'] = r.skew()
+        stats['daily_kurt'] = r.kurt() if len(r[(~np.isnan(r)) & (r != 0)]) > 0 else np.nan
+
+        # stats with monthly prices
+        mr = calc_returns(monthly_price)
+
+        if len(mr) < 2:
+            return stats
+
+        stats['monthly_mean'] = MONTHS_IN_YEAR * mr.mean()
+        stats['monthly_vol'] = np.sqrt(MONTHS_IN_YEAR) * mr.std()
+        stats['monthly_sharpe'] = (stats['monthly_mean'] - montly_risk_free_return) /
+        stats['best_month'] = monthy_price.ix[mr.idxmax():mr.idxmax()]
+        stats['worst_month'] = monthy_price.ix[mr.idxmin():mr.idxmin()]
+        stats['mtd'] = (daily_price[0] / monthy_price[-2]) - 1 # -2 because monthy[1] = daily[-1]
+        stats['pos_month_perc'] = len(mr[mr > 0]) / float(len(mr) - 1) # -1 to ignore first NaN
+        stats['avg_up_month'] = mr[mr > 0].mean()
+        stats['avg_down_month'] = mr[mr <= 0].mean()
+
+        # table for lookback periods
+        return_table = collections.defaultdict(dict)
+        for mi in mr.index:
+            return_table[mi.year][mi.month] = mr[mi]
+        fidx = mr.index[0]
+        try:
+            return_table[fidx.year][fidx.month] = (float(monthly_price[0]) / daily_price[0]) - 1
+        except ZeroDivisionError:
+            return_table[fidx.year][fidx.month] = 0.0
+        # calculate ytd
+        for year, months in return_table.items():
+            return_table[year][13] = np.prod( months + 1) - 1
+
+        if len(mr) < 3:
+            return stats
+
+        denominator = daily_price[:daily_price.index[-1] - pd.DateOffset(months=3)]
+        stats['three_month'] = (daily_price[-1] / denominator) - 1 if len(denominator) > 0 else np.nan
+
+        if len(mr) < 4:
+            return stats
+
+        stats['monthly_skew'] = mr.skew()
+        stats['monthly_kurt'] = mr.kurt() if len(mr[(~np.isnan(mr)) & (mr != 0)]) > 0 else np.nan
+
+        denominator = daily_price[:daily_price.index[-1] - pd.DateOffset(months=6)]
+        stats['six_month'] = (daily_price[-1] / denominator) - 1 if len(denominator) > 0 else np.nan
+
+        # stats with yearly prices
+        yr = calc_returns(yearly_price)
+
+        if len(yr) < 2:
+            return stats
+
+        stats['ytd'] = (daily_price[-1] / yearly_price[-2]) - 1
+
+        denominator = daily_price[:daily_price.index[-1] - pd.DateOffset(years=1)]
+        stats['one_year'] = (daily_price[-1] / denominator) - 1 if len(denominator) > 0 else np.nan
+
+        stats['yearly_mean'] = yr.mean()
+        stats['yearly_vol'] = yr.std()
+        stats['yearly_sharpe'] = (stats['yearly_mean'] - yearly_risk_free_return) / stats['yearly_vol']
+        stats['best_year'] = yearly_price.ix[yr.idxmax():yr.idxmax()]
+        stats['worst_year'] = yearly_price.ix[yr.idxmin():yr.idxmin()]
+
+        # annualize stat for over 1 year
+        stats['three_year'] =  calc_cagr(daily_price[daily_price.index[-1] - pd.DateOffset(years=3):])
+
+        stats['win_year_perc'] = len(yr[yr > 0]) / float(len(yr) - 1)
+        stats['twelve_month_win_perc'] =  (monthly_price.pct_change(11) > 0).sum() / len(monthly_price) - (MONTHS_IN_YEAR - 1)
+
+        if len(yr) < 4:
+            return stats
+
+        stats['yearly_skew'] = yr.shew()
+        stats['yearly_kurt'] = mr.kurt() if len(yr[(~np.isnan(yr)) & (yr != 0)]) > 0 else np.nan
+        stats['five_year'] = calc_cagr(daily_price[daily_price.index[-1] - pd.DateOffset(years=5):])
+        stats['ten_year'] =  calc_cagr(daily_price[daily_price.index[-1] - pd.DateOffset(years=10):])
+
+        return stats
 
     # Package it all up...idk, used mostly to test there are no errors
     # ----------------------------------------------------------------
