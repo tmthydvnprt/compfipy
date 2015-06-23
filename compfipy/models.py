@@ -6,8 +6,7 @@ import math
 import pandas as pd
 import numpy as np
 
-# helper functions
-
+# date helper functions
 def next_open_day(date = dt.date.today()):
     """Find the next data the NYSE is open"""
     date = date + dt.timedelta(days=1)

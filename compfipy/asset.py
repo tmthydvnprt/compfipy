@@ -33,7 +33,7 @@ def ema(x, n=20):
 
 def calc_returns(x):
     """calculate arithmetic returns of price series"""
-    return x / x.shift(1) - 1
+    return x / x.shift(1) - 1.0
 
 def calc_log_returns(x):
     """calculate log returns of price series"""
@@ -41,13 +41,13 @@ def calc_log_returns(x):
 
 def calc_price(x, x0=DEFAULT_INITIAL_PRICE):
     """calculate price from returns series"""
-    return (x.replace(to_replace=np.nan, value=0) + 1).cumprod() * x0
+    return (x.replace(to_replace=np.nan, value=0) + 1.0).cumprod() * x0
 
 def calc_cagr(x):
     """ calculate compound annual growth rate"""
     start = x.index[0]
     end = x.index[-1]
-    return np.power((x.ix[-1] / x.ix[0]), 1.0 / ((end - start).days / DAYS_IN_YEAR)) - 1
+    return np.power((x.ix[-1] / x.ix[0]), 1.0 / ((end - start).days / DAYS_IN_YEAR)) - 1.0
 
 def rebase_price(x, x0=DEFAULT_INITIAL_PRICE):
     """convert a series to another initial price"""
@@ -371,7 +371,7 @@ class Asset(object):
         typical price = --------------------
                                  3
         """
-        return (self.high + self.low + self.close) / 3
+        return (self.high + self.low + self.close) / 3.0
 
     def close_to_open_range(self):
         """Calculate close to open range:
@@ -383,7 +383,7 @@ class Asset(object):
         """Calculate quandrant range:
             l_i = i * (high - low) / 4, for i = [1, 4]
         """
-        size = self.high_low_spread() / 4
+        size = self.high_low_spread() / 4.0
         l1 = self.low
         l2 = l1 + size
         l3 = l2 + size
@@ -433,7 +433,7 @@ class Asset(object):
 
         # get highest high
         highest_high = pd.expanding_max(draw_down)
-        draw_down = (draw_down / highest_high) - 1
+        draw_down = (draw_down / highest_high) - 1.0
         return draw_down
 
     def drawdown_info(self):
@@ -490,10 +490,10 @@ class Asset(object):
         """Ichimoku Clouds"""
         high = self.high
         low = self.low
-        conversion = (pd.rolling_max(high, n1) + pd.rolling_min(low, n1)) / 2
-        base = (pd.rolling_max(high, n2) + pd.rolling_min(low, n2)) / 2
-        leading_a = (conversion + base) / 2
-        leading_b = (pd.rolling_max(high, n3) + pd.rolling_min(low, n3)) / 2
+        conversion = (pd.rolling_max(high, n1) + pd.rolling_min(low, n1)) / 2.0
+        base = (pd.rolling_max(high, n2) + pd.rolling_min(low, n2)) / 2.0
+        leading_a = (conversion + base) / 2.0
+        leading_b = (pd.rolling_max(high, n3) + pd.rolling_min(low, n3)) / 2.0
         lagging = self.close.shift(-n2)
         return pd.DataFrame({'conversion' : conversion, 'base': base, 'leadA': leading_a, 'leadB': leading_b, 'lag': lagging})
 
@@ -501,8 +501,8 @@ class Asset(object):
         """keltner_channels"""
         atr = self.atr(natr)
         ml = ema(self.close, n)
-        ul = ml + 2 * atr
-        ll = ml - 2 * atr
+        ul = ml + 2.0 * atr
+        ll = ml - 2.0 * atr
         return pd.DataFrame({'ul': ul, 'ml': ml, 'll': ll})
 
     def moving_average_envelopes(self, n=20, k=0.025):
@@ -553,9 +553,9 @@ class Asset(object):
         """pivot_point"""
         p = self.typical_price()
         hl = self.high_low_spread()
-        s1 = (2 * p) - self.high
+        s1 = (2.0 * p) - self.high
         s2 = p - hl
-        r1 = (2 * p) - self.low
+        r1 = (2.0 * p) - self.low
         r2 = p + hl
         return pd.DataFrame({'p': p, 's1': s1, 's2': s2, 'r1': r1, 'r2': r2})
 
@@ -565,10 +565,10 @@ class Asset(object):
         hl = self.high_low_spread()
         s1 = p - 0.382 * hl
         s2 = p - 0.618 * hl
-        s3 = p - 1 * hl
+        s3 = p - 1.0 * hl
         r1 = p + 0.382 * hl
         r2 = p + 0.618 * hl
-        r3 = p + 1 * hl
+        r3 = p + 1.0 * hl
         return pd.DataFrame({'p': p, 's1': s1, 's2': s2, 's3': s3, 'r1': r1, 'r2': r2, 'r3': r3})
 
     def demark_pivot_point(self):
@@ -577,19 +577,19 @@ class Asset(object):
         h_lc = self.close > self.open
         hl_c = self.close == self.open
         p = np.zeros(len(self.close))
-        p[h_l_c] = self.high[h_l_c] + 2 * self.low[h_l_c] + self.close[h_l_c]
-        p[h_lc] = 2 * self.high[h_lc] + self.low[h_lc] + self.close[h_lc]
-        p[hl_c] = self.high[hl_c] + self.low[hl_c] + 2 * self.close[hl_c]
-        s1 = p / 2 - self.high
-        r1 = p / 2 - self.low
-        p = p / 4
+        p[h_l_c] = self.high[h_l_c] + 2.0 * self.low[h_l_c] + self.close[h_l_c]
+        p[h_lc] = 2.0 * self.high[h_lc] + self.low[h_lc] + self.close[h_lc]
+        p[hl_c] = self.high[hl_c] + self.low[hl_c] + 2.0 * self.close[hl_c]
+        s1 = p / 2.0 - self.high
+        r1 = p / 2.0 - self.low
+        p = p / 4.0
         return pd.DataFrame({'p': p, 's1': s1, 'r1': r1})
 
     def price_channel(self, n=20):
         """price_channel"""
         n_day_high = pd.rolling_max(self.high, n)
         n_day_low = pd.rolling_min(self.low, n)
-        center = (n_day_high + n_day_low) / 2
+        center = (n_day_high + n_day_low) / 2.0
         return pd.DataFrame({'high': n_day_high, 'low': n_day_low, 'center': center})
 
     def volume_by_price(self, n=14, block_num=12):
@@ -607,7 +607,7 @@ class Asset(object):
         volume_by_price = pd.DataFrame(np.zeros((close.shape[0], block_num)))
         for j in range(n-1, close.shape[0]):
             for i, c in enumerate(close[j-(n-1):j+1]):
-                block = (price_blocks.iloc[i, :] <= c).sum() - 1
+                block = (price_blocks.iloc[i, :] <= c).sum() - 1.0
                 block = 0 if block < 0 else block
                 volume_by_price.iloc[j, block] = volume[i] + volume_by_price.iloc[j, block]
         volume_by_price = volume_by_price.set_index(close.index)
@@ -621,14 +621,14 @@ class Asset(object):
         """volume_weighted_average_price"""
         return self.volume_weighted_average_price()
 
-    def zigzag(self, percent=7):
+    def zigzag(self, percent=7.0):
         """zigzag"""
         x = self.close
         zigzag = pd.TimeSeries(np.zeros(self.number_of_days), index=x.index)
         lastzig = x[0]
         zigzag[0] = x[0]
         for i in range(1, self.number_of_days):
-            if np.abs((lastzig - x[i]) / x[i]) > percent / 100:
+            if np.abs((lastzig - x[i]) / x[i]) > percent / 100.0:
                 zigzag[i] = x[i]
                 lastzig = x[i]
             else:
@@ -653,7 +653,7 @@ class Asset(object):
         day_b4_high = (high == n_day_high).shift(-1).fillna(False)
         days_since_high = pd.TimeSeries(np.nan + np.ones(len(high)), index=high.index)
         days_since_high[day_b4_high] = time_since_last_max
-        days_since_high[high == n_day_high] = 0
+        days_since_high[high == n_day_high] = 0.0
         days_since_high = days_since_high.interpolate('time').astype(int).clip_upper(n)
         low = self.low
         n_day_low = pd.rolling_min(low, n, 0)
@@ -662,7 +662,7 @@ class Asset(object):
         day_b4_low = (low == n_day_low).shift(-1).fillna(False)
         days_since_low = pd.TimeSeries(np.nan + np.ones(len(low)), index=low.index)
         days_since_low[day_b4_low] = time_since_last_min
-        days_since_low[low == n_day_low] = 0
+        days_since_low[low == n_day_low] = 0.0
         days_since_low = days_since_low.interpolate('time').astype(int).clip_upper(n)
         aroon_up = 100.0 * ((n - days_since_high) / n)
         aroon_dn = 100.0 * ((n - days_since_low) / n)
@@ -738,7 +738,7 @@ class Asset(object):
 
     def price_momentum_oscillator(self, n1=20, n2=35, n3=10):
         """price_momentum_oscillator"""
-        pmo = ema(10 * ema((100 * (self.close / self.close.shift(1))) - 100, n2), n1)
+        pmo = ema(10 * ema((100 * (self.close / self.close.shift(1))) - 100.0, n2), n1)
         signal = ema(pmo, n3)
         return pd.DataFrame({'pmo': pmo, 'signal': signal})
     def pmo(self, n1=20, n2=35, n3=10):
@@ -747,16 +747,16 @@ class Asset(object):
 
     def detrended_price_oscillator(self, n=20):
         """detrended_price_oscillator"""
-        return self.close.shift(int(n / 2 + 1)) - sma(self.close, n)
+        return self.close.shift(int(n / 2.0 + 1.0)) - sma(self.close, n)
     def dpo(self, n=20):
         """detrended_price_oscillator"""
         return self.detrended_price_oscillator(n)
 
     def ease_of_movement(self, n=14):
         """ease_of_movement"""
-        high_low_avg = (self.high + self.low) / 2
+        high_low_avg = (self.high + self.low) / 2.0
         distance_moved = high_low_avg - high_low_avg.shift(1)
-        box_ratio = (self.volume / 100000000) / (self.high - self.low)
+        box_ratio = (self.volume / 100000000.0) / (self.high - self.low)
         emv = distance_moved / box_ratio
         return sma(emv, n)
 
@@ -771,7 +771,7 @@ class Asset(object):
         rcma2 = sma(self.roc(15), 10)
         rcma3 = sma(self.roc(20), 10)
         rcma4 = sma(self.roc(30), 15)
-        kst = rcma1 + 2 * rcma2 + 3 * rcma3 + 4 * rcma4
+        kst = rcma1 + 2.0 * rcma2 + 3.0 * rcma3 + 4.0 * rcma4
         kst_signal = sma(kst, n_sig)
         return pd.DataFrame({'kst': kst, 'signal': kst_signal})
     def kst(self, n_sig=9):
@@ -801,10 +801,10 @@ class Asset(object):
         rmf = tp * self.volume
         pmf = rmf.copy()
         nmf = rmf.copy()
-        pmf[pmf < 0] = 0
-        nmf[nmf > 0] = 0
+        pmf[pmf < 0] = 0.0
+        nmf[nmf > 0] = 0.0
         mfr = pd.rolling_sum(pmf, n) / pd.rolling_sum(nmf, n)
-        return 100 - (100 / (1 + mfr))
+        return 100.0 - (100.0 / (1.0 + mfr))
 
     def negative_volume_index(self, n=255):
         """negative_volume_index"""
@@ -812,7 +812,7 @@ class Asset(object):
         # forward fill when volumes increase with last percent change of a volume decrease day
         pct_change[self.volume > self.volume.shift(1)] = None
         pct_change = pct_change.ffill()
-        nvi = 1000 + pct_change
+        nvi = 1000.0 + pct_change
         nvi_signal = ema(nvi, n)
         return pd.DataFrame({'nvi': nvi, 'signal': nvi_signal})
     def nvi(self, n=255):
@@ -822,9 +822,9 @@ class Asset(object):
     def on_balance_volume(self):
         """on_balance_volume"""
         p_obv = self.volume.astype(float)
-        n_obv = (-1 * p_obv.copy())
-        p_obv[self.close < self.close.shift(1)] = 0
-        n_obv[self.close > self.close.shift(1)] = 0
+        n_obv = (-1.0 * p_obv.copy())
+        p_obv[self.close < self.close.shift(1)] = 0.0
+        n_obv[self.close > self.close.shift(1)] = 0.0
         p_obv[self.close == self.close.shift(1)] = None
         n_obv[self.close == self.close.shift(1)] = None
         obv = p_obv + n_obv
@@ -835,7 +835,7 @@ class Asset(object):
 
     def percentage_price_oscillator(self, n1=12, n2=26, n3=9):
         """percentage_price_oscillator"""
-        ppo = 100 * (ema(self.close, n1) - ema(self.close, n2)) / ema(self.close, n2)
+        ppo = 100.0 * (ema(self.close, n1) - ema(self.close, n2)) / ema(self.close, n2)
         ppo_signal = ema(ppo, n3)
         ppo_hist = ppo - ppo_signal
         return pd.DataFrame({'ppo': ppo, 'signal': ppo_signal, 'hist': ppo_hist})
@@ -845,7 +845,7 @@ class Asset(object):
 
     def percentage_volume_oscillator(self, n1=12, n2=26, n3=9):
         """percentage_volume_oscillator"""
-        pvo = 100 * (ema(self.volume, n1) - ema(self.volume, n2)) / ema(self.volume, n2)
+        pvo = 100.0 * (ema(self.volume, n1) - ema(self.volume, n2)) / ema(self.volume, n2)
         pvo_signal = ema(pvo, n3)
         pvo_hist = pvo - pvo_signal
         return pd.DataFrame({'pvo': pvo, 'signal': pvo_signal, 'hist': pvo_hist})
@@ -858,9 +858,9 @@ class Asset(object):
         change = self.close - self.close.shift(1)
         gain = change.copy()
         loss = change.copy()
-        gain[gain < 0] = 0
-        loss[loss > 0] = 0
-        loss = -1 * loss
+        gain[gain < 0] = 0.0
+        loss[loss > 0] = 0.0
+        loss = -1.0 * loss
         avg_gain = pd.TimeSeries(np.zeros(len(gain)), index=change.index)
         avg_loss = pd.TimeSeries(np.zeros(len(loss)), index=change.index)
         avg_gain[n] = gain[0:n].sum() / n
@@ -869,7 +869,7 @@ class Asset(object):
             avg_gain[i] = (n-1) * (avg_gain[i-1] / n) + (gain[i] / n)
             avg_loss[i] = (n-1) * (avg_loss[i-1] / n) + (loss[i] / n)
         rs = avg_gain / avg_loss
-        return 100 - (100 / (1 + rs))
+        return 100.0 - (100.0 / (1.0 + rs))
     def rsi(self, n=14):
         """relative_strength_index"""
         return self.relative_strength_index(n)
@@ -879,12 +879,12 @@ class Asset(object):
         n = n if n else RANK_DAYS_IN_TRADING_YEAR
         w = w if w else RANK_PERCENTS
         close = self.close
-        long_ma = 100 * (1 - close / ema(close, n[0]))
+        long_ma = 100.0 * (1 - close / ema(close, n[0]))
         long_roc = self.roc(n[1])
-        medium_ma = 100 * (1 - close / ema(close, n[2]))
+        medium_ma = 100.0 * (1.0 - close / ema(close, n[2]))
         medium_roc = self.roc(n[3])
         ppo = self.ppo()
-        short_ppo_m = 100 * ((ppo['hist'] - ppo['hist'].shift(n[4])) / n[4]) / 2
+        short_ppo_m = 100.0 * ((ppo['hist'] - ppo['hist'].shift(n[4])) / n[4]) / 2.0
         short_rsi = self.rsi(n[5])
         return w[0] * long_ma + w[1] * long_roc + w[2] * medium_ma + w[3] * medium_roc + w[4] * short_ppo_m + w[5] * short_rsi
     def sctr(self, n=None, w=None):
@@ -904,7 +904,7 @@ class Asset(object):
         """stochastic_oscillator"""
         n_day_high = pd.rolling_max(self.high, n)
         n_day_low = pd.rolling_min(self.low, n)
-        percent_k = 100 * (self.close - n_day_low) / (n_day_high - n_day_low)
+        percent_k = 100.0 * (self.close - n_day_low) / (n_day_high - n_day_low)
         percent_d = sma(percent_k, n1)
         return pd.DataFrame({'k': percent_k, 'd': percent_d})
 
@@ -930,14 +930,14 @@ class Asset(object):
         abs_pc = (self.close - self.close.shift(1)).abs()
         abs_ema1 = ema(abs_pc, n1)
         abs_ema2 = ema(abs_ema1, n2)
-        return 100 * ema2 / abs_ema2
+        return 100.0 * ema2 / abs_ema2
     def tsi(self, n1=25, n2=13):
         """true_strength_index"""
         return self.true_strength_index(n1, n2)
 
     def ulcer_index(self, n=14):
         """ulcer_index"""
-        percent_draw_down = 100 * (self.close - pd.rolling_max(self.close, n)) / pd.rolling_max(self.close, n)
+        percent_draw_down = 100.0 * (self.close - pd.rolling_max(self.close, n)) / pd.rolling_max(self.close, n)
         return np.sqrt(pd.rolling_sum(percent_draw_down * percent_draw_down, n) / n)
 
     def ultimate_oscillator(self, n1=7, n2=14, n3=28):
@@ -949,7 +949,7 @@ class Asset(object):
         a1 = pd.rolling_sum(bp, n1) / pd.rolling_sum(tr, n1)
         a2 = pd.rolling_sum(bp, n2) / pd.rolling_sum(tr, n2)
         a3 = pd.rolling_sum(bp, n3) / pd.rolling_sum(tr, n3)
-        return 100 * (4 * a1 + 2 * a2 + a3) / (4 + 2 + 1)
+        return 100.0 * (4.0 * a1 + 2.0 * a2 + a3) / (4.0 + 2.0 + 1.0)
 
     def vortex(self, n=14):
         """vortex"""
@@ -969,7 +969,7 @@ class Asset(object):
         """william_percent_r"""
         high_max = pd.rolling_max(self.high, n)
         low_min = pd.rolling_min(self.low, n)
-        return -100 * (high_max - self.close) / (high_max - low_min)
+        return -100.0 * (high_max - self.close) / (high_max - low_min)
 
     # Charting :
     # ------------
@@ -993,7 +993,7 @@ class Asset(object):
         day_b4_high = (high == n_day_high).shift(-1).fillna(False)
         days_since_high = pd.TimeSeries(np.nan + np.ones(len(high)), index=high.index)
         days_since_high[day_b4_high] = time_since_last_max
-        days_since_high[high == n_day_high] = 0
+        days_since_high[high == n_day_high] = 0.0
         days_since_high = days_since_high.interpolate('time').astype(int).clip_upper(n)
 
         low = self.low
@@ -1003,7 +1003,7 @@ class Asset(object):
         day_b4_low = (low == n_day_low).shift(-1).fillna(False)
         days_since_low = pd.TimeSeries(np.nan + np.ones(len(low)), index=low.index)
         days_since_low[day_b4_low] = time_since_last_min
-        days_since_low[low == n_day_low] = 0
+        days_since_low[low == n_day_low] = 0.0
         days_since_low = days_since_low.interpolate('time').astype(int).clip_upper(n)
 
         trend_length = (days_since_high - days_since_low)
@@ -1093,16 +1093,16 @@ class Asset(object):
         returns = self.returns(periods=periods, freq=freq).fillna(0)
         return returns / periods
 
-    def price_change(self, start=None, end=None):
+    def price_delta(self, start=None, end=None):
         """ returns between dates, defaults to total return"""
         end = end if end else -1
         start = start if start else 0
         return self.close[end] - self.close[start]
 
-    def return_change(self, start=None, end=None):
+    def total_return(self, start=None, end=None):
         """ returns between dates, defaults to total return"""
         start = start if start else 0
-        return 100.0 * self.price_change(start=start, end=end) / self.close[start]
+        return 100.0 * self.price_delta(start=start, end=end) / self.close[start]
 
     def return_on_investment(self, periods=DAYS_IN_TRADING_YEAR, freq=None):
         """return on investment"""
@@ -1242,8 +1242,8 @@ class Asset(object):
         self.stats['monthly_sharpe'] = (self.stats['monthly_mean'] - monthly_risk_free_return) / self.stats['monthly_vol']
         self.stats['best_month'] = mr.ix[mr.idxmax():mr.idxmax()]
         self.stats['worst_month'] = mr.ix[mr.idxmin():mr.idxmin()]
-        self.stats['mtd'] = (daily_price[-1] / monthly_price[-2]) - 1 # -2 because monthly[1] = daily[-1]
-        self.stats['pos_month_perc'] = len(mr[mr > 0]) / float(len(mr) - 1) # -1 to ignore first NaN
+        self.stats['mtd'] = (daily_price[-1] / monthly_price[-2]) - 1.0 # -2 because monthly[1] = daily[-1]
+        self.stats['pos_month_perc'] = len(mr[mr > 0]) / float(len(mr) - 1.0) # -1 to ignore first NaN
         self.stats['avg_up_month'] = mr[mr > 0].mean()
         self.stats['avg_down_month'] = mr[mr <= 0].mean()
 
@@ -1258,7 +1258,7 @@ class Asset(object):
             self.stats['return_table'][fidx.year][fidx.month] = 0.0
         # calculate ytd
         for year, months in self.stats['return_table'].items():
-            self.stats['return_table'][year][13] = np.prod(np.array(months.values()) + 1) - 1
+            self.stats['return_table'][year][13] = np.prod(np.array(months.values()) + 1) - 1.0
 
         if len(mr) < 3:
             return
@@ -1281,7 +1281,7 @@ class Asset(object):
         if len(yr) < 2:
             return
 
-        self.stats['ytd'] = (daily_price[-1] / yearly_price[-2]) - 1
+        self.stats['ytd'] = (daily_price[-1] / yearly_price[-2]) - 1.0
 
         denominator = daily_price[:daily_price.index[-1] - pd.DateOffset(years=1)]
         self.stats['one_year'] = (daily_price[-1] / denominator[-1]) - 1 if len(denominator) > 0 else np.nan
@@ -1294,7 +1294,7 @@ class Asset(object):
 
         # annualize stat for over 1 year
         self.stats['three_year'] =  calc_cagr(daily_price[daily_price.index[-1] - pd.DateOffset(years=3):])
-        self.stats['win_year_perc'] = len(yr[yr > 0]) / float(len(yr) - 1)
+        self.stats['win_year_perc'] = len(yr[yr > 0]) / float(len(yr) - 1.0)
         self.stats['twelve_month_win_perc'] =  (monthly_price.pct_change(11) > 0).sum() / float(len(monthly_price) - (MONTHS_IN_YEAR - 1.0))
 
         if len(yr) < 4:
