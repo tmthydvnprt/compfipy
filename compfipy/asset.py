@@ -78,6 +78,22 @@ def fibonacci_time(date=dt.date.today()):
     """fibonacci_time"""
     return [date + dt.timedelta(days=d) for d in FIBONACCI_SEQUENCE]
 
+# general utility functions
+def plot(x, figsize=(16, 4), title=None, logy=False, **kwargs):
+    """plot helper, assumes a pd.Series or pd.DataFrame"""
+    title = title if title else 'Price Series'
+    x.plot(figsize=figsize, title=title, logy=logy, **kwargs)
+
+def scatter_matrix(x, figsize=(16, 4), title=None, logy=False, **kwargs):
+    """plot helper, assumes a pd.Series or pd.DataFrame"""
+    title = title if title else 'Price Scatter Matrix'
+    x.scatter_matrix(figsize=figsize, title=title, logy=logy, **kwargs)
+
+def hist(x, figsize=(16, 4), title=None, logy=False, **kwargs):
+    """plot helper, assumes a pd.Series or pd.DataFrame"""
+    title = title if title else 'Return Histogram'
+    x.hist(figsize=figsize, title=title, logy=logy, **kwargs)
+
 class Asset(object):
     # pylint: disable=line-too-long
     """Asset Class for storing OCHLV price data, and calculating overlays and indicators from price data.
@@ -252,8 +268,8 @@ class Asset(object):
     # class helper functions
     def plot(self):
         """Wrapper for pandas plot()"""
-        self.data[['Open', 'Close', 'High', 'Low']].plot(figsize=(16,4))
-        self.data[['Volume']].plot(figsize=(16,4))
+        self.data[['Open', 'Close', 'High', 'Low']].plot(figsize=(16,4), title='{} OCHL Price'.format(self.symbol.upper()))
+        self.data[['Volume']].plot(figsize=(16,4), title='{} Volume'.format(self.symbol.upper()))
 
     def describe(self):
         """Wrapper for pandas describe()"""
