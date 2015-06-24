@@ -16,6 +16,7 @@ DEFAULT_INITIAL_PRICE = 100.0
 DAYS_IN_YEAR = 365.25
 DAYS_IN_TRADING_YEAR = 252.0
 MONTHS_IN_YEAR = 12.0
+RISK_FREE_RATE = 0.05
 
 FIBONACCI_DECIMAL = np.array([0, 0.236, 0.382, 0.5, 0.618, 1])
 FIBONACCI_SEQUENCE = [0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233]
@@ -1136,17 +1137,41 @@ class Asset(object):
 
     def information_ratio(self, benchmark):
         """caluculate the information ratio relative to a benchmark"""
-        diff_returns = self.returns() - benchmark.returns()
-        diff_std = diff_returns.std()
+        return_delta = self.returns() - benchmark.returns()
+        return return_delta.mean() / return_delta.std()
 
-        if np.isnan(diff_std) or diff_std == 0:
-            return 0.0
-        else:
-            return diff_returns.mean() / diff_std
+    # Market Comparisons :
+    # --------------------
+    def sharpe_ratio(self, market):
+        """sharpe ratio"""
+        return_delta = self.returns() - market.returns()
+        return return_delta.mean() / return_delta.std()
+
+    def annualized_sharpe_ratio(self, market, N=DAYS_IN_TRADING_YEAR):
+        """annualized sharpe ratio"""
+        return np.sqrt(N) * self.sharpe_ratio(market)
+
+    def equity_sharpe(self, market, risk_free_rate=RISK_FREE_RATE, N=DAYS_IN_TRADING_YEAR):
+        """equity sharpe"""
+        excess_returns = self.returns() - RISK_FREE_RATE / N
+        return_delta = excess_returns - market.returns()
+        return np.sqrt(N) * return_delta.mean() / return_delta.std()
+
+    def beta(self, market):
+        """beta"""
+        cov = np.cov(self.close, market.close)
+        return cov[0,1] / cov[1,1]
+
+    def alpha(self, market, risk_free_rate=RISK_FREE_RATE):
+        """
+        alpha
+        (R_i - R_f) = \alpha + \beta (R_M - R_f) + esp_i
+        """
+        self.close.mean() - risk_free_rate - self.beta(market) * (market.close.mean() - risk_free_rate)
 
     # Summary stats :
     # ---------------
-    def calc_stats(self, yearly_risk_free_return=0.0):
+    def calc_stats(self, yearly_risk_free_return=RISK_FREE_RATE):
         """calculate common statistics for this asset"""
 
         monthly_risk_free_return = (np.power(1 + yearly_risk_free_return, 1.0 / MONTHS_IN_YEAR) - 1.0) * MONTHS_IN_YEAR
