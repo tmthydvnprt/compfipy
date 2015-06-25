@@ -1159,15 +1159,21 @@ class Asset(object):
 
     def beta(self, market):
         """beta"""
-        cov = np.cov(self.close, market.close)
+        cov = np.cov(self.close.returns(), market.close.returns())
         return cov[0,1] / cov[1,1]
 
     def alpha(self, market, risk_free_rate=RISK_FREE_RATE):
-        """
-        alpha
-        (R_i - R_f) = \alpha + \beta (R_M - R_f) + esp_i
-        """
-        self.close.mean() - risk_free_rate - self.beta(market) * (market.close.mean() - risk_free_rate)
+        """alpha"""
+        self.close.returns().mean() - risk_free_rate - self.beta(market) * (market.close.returns().mean() - risk_free_rate)
+
+    def r_squared(self, market, risk_free_rate=RISK_FREE_RATE):
+        """"R-squared"""
+        epsi = 0.0
+        Ri = self.alpha(market) + self.beta(market) * (self.market.close.returns() - risk_free_rate) + espi + risk_free_rate
+        cov = np.cov(self.close.returns(), market.close.returns())
+        SSres = np.power(Ri - self.close.returns(), 2.0)
+        SStot = cov[0,0] * (len(self.close.returns()) - 1.0)
+        return 1.0 - (SSres / SStot)
 
     # Summary stats :
     # ---------------
