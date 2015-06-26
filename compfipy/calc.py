@@ -42,7 +42,7 @@ def cagr(xi=100.0, xf=110.0, n=1.0):
     """compund annual growth rate"""
     return np.power(xf / xi, 1 / n) - 1
 
-def credit_payment(b=1000.0, p=100.0, apr=0.18):
+def length_of_payment(b=1000.0, p=100.0, apr=0.18):
     """length of payments of b balance with p payment at apr apr"""
     i = apr / 30.0
     return (-1 / 30) * np.log(1 + (b / p)*(1 - np.power(1 + i, 30))) / np.log(1 + i)
