@@ -1,6 +1,7 @@
 """
-models
+models.py
 
+Various Stochastic models of the "market" that provide "fake" asset prices to test on. 
 """
 import math
 import pandas as pd

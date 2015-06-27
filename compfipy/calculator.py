@@ -1,6 +1,9 @@
 """
-calc.py
+calculator.py
+
+General functions that would be in a finacial calculator.
 """
+import numpy as np
 
 def future_vale(pv=100.0, r=0.07, n=1.0, f=1.0):
     """calculate the future value of pv present value after compounding for n periods at r rate every f frequency"""
