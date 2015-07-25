@@ -56,6 +56,7 @@
 ## Overall Function and Flow
 - [ ] create trend trading algorithm
 - [ ] test trend algos on stochastic models, just for process completeness, not correctness at the moment
+- [ ]
 
 ## Parameter Optimization
 - [ ] get asset history

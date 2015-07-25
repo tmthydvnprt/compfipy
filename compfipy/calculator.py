@@ -11,11 +11,11 @@ def future_vale(pv=100.0, r=0.07, n=1.0, f=1.0):
 
 def present_value(fv=100.0, r=0.07, n=1.0, f=1.0):
     """calculate the present value of fv future value before compounding for n periods at r rate every f frequency"""
-    return future_value / np.exp(1.0 + r / f, n * f)
+    return fv / np.exp(1.0 + r / f, n * f)
 
 def rate(fv=100.0, pv=90.0, n=1.0, f=1.0):
     """calculate the rate needed to compound a pv present value into a fv future value compounding over n periods every f frequency"""
-    return f * np.power(fv / pv, 1.0 / (n * f) ) - 1.0
+    return f * np.power(fv / pv, 1.0 / (n * f)) - 1.0
 
 def periods(fv=0.0, pv=0.0, r=0.0, f=0.0):
     """calculate the period needed to compound a pv present value into a fv future value compounding at r rate every f frequency"""

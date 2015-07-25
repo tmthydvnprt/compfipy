@@ -97,7 +97,7 @@ required-attributes=
 bad-functions=map,filter,input
 
 # Good variable names which should always be accepted, separated by a comma
-good-names=i,j,k,ex,Run,_,w,x,y,a,b,c,d,t,f,n,m,o,p,ac,h,l,v
+good-names=i,j,k,ex,Run,_,w,x,y,a,b,c,d,t,f,n,m,o,p,ac,h,l,v,r,N
 
 # Bad variable names which should always be refused, separated by a comma
 bad-names=foo,bar,baz,toto,tutu,tata,fuck,shit,damnit
@@ -181,7 +181,7 @@ docstring-min-length=-1
 [FORMAT]
 
 # Maximum number of characters on a single line.
-max-line-length=128
+max-line-length=160
 
 # Regexp for a line that is allowed to be longer than the limit.
 ignore-long-lines=^\s*(# )?<?https?://\S+>?$
