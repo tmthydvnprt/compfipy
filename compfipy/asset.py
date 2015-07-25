@@ -6,6 +6,7 @@ Define the an asset class to contain price data and various calculations, measur
 """
 
 # libs used
+import matplotlib.pyplot as plt
 import datetime as dt
 import pandas as pd
 import numpy as np
@@ -515,8 +516,21 @@ class Asset(object):
     # class helper functions
     def plot(self):
         """Wrapper for pandas plot()"""
-        self.data[['Open', 'Close', 'High', 'Low']].plot(figsize=(16, 4), title='{} OCHL Price'.format(self.symbol.upper()))
-        self.data[['Volume']].plot(figsize=(16, 4), title='{} Volume'.format(self.symbol.upper()))
+        plt.figure()
+        ax1 = self.data[['Open', 'Close', 'High', 'Low']].plot(figsize=(16, 4), title='{} OCHL Price'.format(self.symbol.upper()))
+
+        plt.figure()
+        ax2 = self.data[['Volume']].plot(figsize=(16, 4), title='{} Volume'.format(self.symbol.upper()))
+
+        plt.figure()
+        ax3 = (100.0 * asset.returns()).hist(figsize=(16, 4), bins=100, normed=1)
+        ax3.set_title('{} Daily Return Distribution'.format('A'))
+        (100.0 * asset.returns()).plot(kind='kde')
+
+        plt.figure()
+        ax4 = (100.0 * asset.returns(freq='M')).hist(figsize=(16, 4), bins=100, normed=1)
+        ax4.set_title('{} Monthly Return Distribution'.format('A'))
+        (100.0 * asset.returns(freq='M')).plot(kind='kde')
 
     def describe(self):
         """Wrapper for pandas describe()"""

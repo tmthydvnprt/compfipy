@@ -70,6 +70,7 @@ class Portfolio(object):
         self.trades[symbol][date] = amount * self.assets[symbol].close[date]
         self.positions[symbol][date:] = self.positions[symbol][date] + amount
 
+    # Calculate Asset-wise numbers and statistics
     def close(self, date_range=slice(None, None, None)):
         """  """
         return pd.DataFrame({symbol: asset.close[date_range] for symbol, asset in self.assets.items()})
@@ -99,6 +100,7 @@ class Portfolio(object):
         """calculate returns of assets"""
         return 100.0 * self.gains(date_range=date_range) / self.cost_bases(date_range=date_range)
 
+    # Calculate Portfolio totals as sums or weighted sums of individual assets
     def total_value(self, date_range=slice(None, None, None)):
         """calculate portfolio value"""
         return self.values(date_range=date_range).sum(axis=1)
@@ -107,6 +109,7 @@ class Portfolio(object):
         """calculate portfolio cost basis"""
         return self.cost_bases(date_range=date_range).sum(axis=1)
 
+    # Total Performance
     def total_gain(self, date_range=slice(None, None, None)):
         """calculate portfolio gain"""
         return self.gains(date_range=date_range).sum(axis=1)
