@@ -105,12 +105,12 @@ class Portfolio(object):
 
     def total_cost_basis(self, date_range=slice(None, None, None)):
         """calculate portfolio cost basis"""
-        return self.cost_bases().sum(axis=1)
+        return self.cost_bases(date_range=date_range).sum(axis=1)
 
     def total_gain(self, date_range=slice(None, None, None)):
         """calculate portfolio gain"""
-        return self.gains().sum(axis=1)
+        return self.gains(date_range=date_range).sum(axis=1)
 
     def total_return(self, date_range=slice(None, None, None)):
         """calculate portfolio returns"""
-        return (self.weights() * self.returns()).sum(axis=1)
+        return (self.weights(date_range=date_range) * self.returns(date_range=date_range)).sum(axis=1)
