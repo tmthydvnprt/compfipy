@@ -1,19 +1,33 @@
 compfipy
 ************* Module compfipy.asset
 I:  1, 0: Locally disabling too-many-public-methods (R0904) (locally-disabled)
-I:101, 0: Locally disabling line-too-long (C0301) (locally-disabled)
-I:210, 0: Locally enabling line-too-long (C0301) (locally-enabled)
-C:494, 0: Line too long (191/160) (line-too-long)
-C:496, 0: Line too long (194/160) (line-too-long)
-C:  1, 0: Too many lines in module (1549/1024) (too-many-lines)
-R:224, 4: Too many statements (70/64) (too-many-statements)
+I:102, 0: Locally disabling line-too-long (C0301) (locally-disabled)
+I:211, 0: Locally enabling line-too-long (C0301) (locally-enabled)
+I:227, 0: Locally disabling too-many-statements (R0915) (locally-disabled)
+I:385, 0: Locally enabling too-many-statements (R0915) (locally-enabled)
 ************* Module compfipy.models
 W: 80,19: Used builtin function 'map' (bad-builtin)
+************* Module compfipy.portfolio
+W: 27, 0: Unused datetime imported as dt (unused-import)
+W: 30, 0: Unused import scipy.stats (unused-import)
+W: 31, 0: Unused import collections (unused-import)
+W: 32, 0: Unused import tabulate (unused-import)
+************* Module compfipy.strategy
+R:  1, 0: Similar lines in 2 files
+==compfipy.asset:9
+==compfipy.portfolio:26
+import datetime as dt
+import pandas as pd
+import numpy as np
+import scipy.stats
+import collections
+import tabulate
+ (duplicate-code)
 
 
 Report
 ======
-909 statements analysed.
+967 statements analysed.
 
 Statistics by type
 ------------------
@@ -23,9 +37,9 @@ Statistics by type
 +=========+=======+===========+===========+============+=========+
 |module   |8      |8          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|class    |1      |1          |=          |100.00      |0.00     |
+|class    |2      |2          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|method   |118    |118        |=          |100.00      |0.00     |
+|method   |132    |132        |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
 |function |44     |44         |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
@@ -38,11 +52,13 @@ External dependencies
 
     dateutil 
       \-easter (compfipy.models)
-    numpy (compfipy.calculator,compfipy.models,compfipy.asset)
-    pandas (compfipy.models,compfipy.asset)
+    matplotlib 
+      \-pyplot (compfipy.asset)
+    numpy (compfipy.portfolio,compfipy.calculator,compfipy.models,compfipy.asset)
+    pandas (compfipy.portfolio,compfipy.models,compfipy.asset)
     scipy 
-      \-stats (compfipy.asset)
-    tabulate (compfipy.asset)
+      \-stats (compfipy.portfolio,compfipy.asset)
+    tabulate (compfipy.portfolio,compfipy.asset)
 
 
 
@@ -52,13 +68,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |1012   |61.74 |1012     |=          |
+|code      |1076   |61.42 |1076     |=          |
 +----------+-------+------+---------+-----------+
-|docstring |519    |31.67 |519      |=          |
+|docstring |554    |31.62 |554      |=          |
 +----------+-------+------+---------+-----------+
-|comment   |54     |3.29  |54       |=          |
+|comment   |60     |3.42  |60       |=          |
 +----------+-------+------+---------+-----------+
-|empty     |54     |3.29  |54       |=          |
+|empty     |62     |3.54  |58       |+4.00      |
 +----------+-------+------+---------+-----------+
 
 
@@ -69,9 +85,9 @@ Duplication
 +-------------------------+------+---------+-----------+
 |                         |now   |previous |difference |
 +=========================+======+=========+===========+
-|nb duplicated lines      |0     |0        |=          |
+|nb duplicated lines      |7     |7        |=          |
 +-------------------------+------+---------+-----------+
-|percent duplicated lines |0.000 |0.000    |=          |
+|percent duplicated lines |0.361 |0.361    |-0.00      |
 +-------------------------+------+---------+-----------+
 
 
@@ -82,13 +98,13 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |3      |3        |=          |
+|convention |0      |1        |-1.00      |
 +-----------+-------+---------+-----------+
-|refactor   |1      |1        |=          |
+|refactor   |1      |2        |-1.00      |
 +-----------+-------+---------+-----------+
-|warning    |1      |1        |=          |
+|warning    |5      |5        |=          |
 +-----------+-------+---------+-----------+
-|error      |0      |2        |-2.00      |
+|error      |0      |0        |=          |
 +-----------+-------+---------+-----------+
 
 
@@ -96,38 +112,36 @@ Messages by category
 % errors / warnings by module
 -----------------------------
 
-+----------------+------+--------+---------+-----------+
-|module          |error |warning |refactor |convention |
-+================+======+========+=========+===========+
-|compfipy.models |0.00  |100.00  |0.00     |0.00       |
-+----------------+------+--------+---------+-----------+
-|compfipy.asset  |0.00  |0.00    |100.00   |100.00     |
-+----------------+------+--------+---------+-----------+
++-------------------+------+--------+---------+-----------+
+|module             |error |warning |refactor |convention |
++===================+======+========+=========+===========+
+|compfipy.portfolio |0.00  |80.00   |0.00     |0.00       |
++-------------------+------+--------+---------+-----------+
+|compfipy.models    |0.00  |20.00   |0.00     |0.00       |
++-------------------+------+--------+---------+-----------+
 
 
 
 Messages
 --------
 
-+--------------------+------------+
-|message id          |occurrences |
-+====================+============+
-|locally-disabled    |2           |
-+--------------------+------------+
-|line-too-long       |2           |
-+--------------------+------------+
-|too-many-statements |1           |
-+--------------------+------------+
-|too-many-lines      |1           |
-+--------------------+------------+
-|locally-enabled     |1           |
-+--------------------+------------+
-|bad-builtin         |1           |
-+--------------------+------------+
++-----------------+------------+
+|message id       |occurrences |
++=================+============+
+|unused-import    |4           |
++-----------------+------------+
+|locally-disabled |3           |
++-----------------+------------+
+|locally-enabled  |2           |
++-----------------+------------+
+|duplicate-code   |1           |
++-----------------+------------+
+|bad-builtin      |1           |
++-----------------+------------+
 
 
 
 Global evaluation
 -----------------
-Your code has been rated at 9.94/10 (previous run: 9.83/10, +0.11)
+Your code has been rated at 9.94/10 (previous run: 9.92/10, +0.02)
 

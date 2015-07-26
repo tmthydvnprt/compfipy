@@ -31,8 +31,6 @@ import scipy.stats
 import collections
 import tabulate
 
-from compfipy.asset import Asset
-
 class Portfolio(object):
     """
     define a collection of assets with holdings
@@ -42,9 +40,9 @@ class Portfolio(object):
 
         # create empty tables
         empty_table = pd.DataFrame(
-            np.zeros((len(assets[symbols[0]].close), len(assets))),
+            np.zeros((len(assets[0].close), len(assets))),
             columns=[symbol for symbol in assets.keys()],
-            index=assets[symbols[0]].close.index
+            index=assets[0].close.index
         )
 
         positions = copy.deepcopy(empty_table)
@@ -72,11 +70,11 @@ class Portfolio(object):
 
     # Calculate Asset-wise numbers and statistics
     def close(self, date_range=slice(None, None, None)):
-        """  """
+        """return closing price for each asset"""
         return pd.DataFrame({symbol: asset.close[date_range] for symbol, asset in self.assets.items()})
 
     def pct_change(self, date_range=slice(None, None, None)):
-        """  """
+        """return closing price returns for each asset"""
         return 100.0 * self.close(date_range).pct_change()
 
     def values(self, date_range=slice(None, None, None)):

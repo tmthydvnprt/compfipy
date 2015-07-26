@@ -224,6 +224,7 @@ class Asset(object):
     # ---------------
     def calc_stats(self, yearly_risk_free_return=RISK_FREE_RATE):
         """calculate common statistics for this asset"""
+        # pylint: disable=too-many-statements
 
         monthly_risk_free_return = (np.power(1 + yearly_risk_free_return, 1.0 / MONTHS_IN_YEAR) - 1.0) * MONTHS_IN_YEAR
         daily_risk_free_return = (np.power(1 + yearly_risk_free_return, 1.0 / DAYS_IN_TRADING_YEAR) - 1.0) * DAYS_IN_TRADING_YEAR
@@ -381,6 +382,7 @@ class Asset(object):
         self.stats['ten_year'] = calc_cagr(daily_price[daily_price.index[-1] - pd.DateOffset(years=10):])
 
         return
+        # pylint: enable=too-many-statements
 
     def display_stats(self):
         """display talbe of stats"""
@@ -492,9 +494,11 @@ class Asset(object):
             ['skew', fmtn(self.stats['daily_skew']), fmtn(self.stats['monthly_skew']), fmtn(self.stats['yearly_skew'])],
             ['kurt', fmtn(self.stats['daily_kurt']), fmtn(self.stats['monthly_kurt']), fmtn(self.stats['yearly_kurt'])],
             ['best price', fmtp(self.stats['best_day'][0]), fmtp(self.stats['best_month'][0]), fmtp(self.stats['best_year'][0])],
-            ['best time', self.stats['best_day'].index[0].strftime('%Y-%m-%d'), self.stats['best_month'].index[0].strftime('%Y-%m-%d'), self.stats['best_year'].index[0].strftime('%Y-%m-%d')],
+            ['best time', self.stats['best_day'].index[0].strftime('%Y-%m-%d'), self.stats['best_month'].index[0].strftime('%Y-%m-%d'), \
+                self.stats['best_year'].index[0].strftime('%Y-%m-%d')],
             ['worst price', fmtp(self.stats['worst_day'][0]), fmtp(self.stats['worst_month'][0]), fmtp(self.stats['worst_year'][0])],
-            ['worst time', self.stats['worst_day'].index[0].strftime('%Y-%m-%d'), self.stats['worst_month'].index[0].strftime('%Y-%m-%d'), self.stats['worst_year'].index[0].strftime('%Y-%m-%d')]
+            ['worst time', self.stats['worst_day'].index[0].strftime('%Y-%m-%d'), self.stats['worst_month'].index[0].strftime('%Y-%m-%d'), \
+                self.stats['worst_year'].index[0].strftime('%Y-%m-%d')]
             ]
         print tabulate.tabulate(data, headers=['daily', 'monthly', 'yearly'])
 
@@ -517,20 +521,20 @@ class Asset(object):
     def plot(self):
         """Wrapper for pandas plot()"""
         plt.figure()
-        ax1 = self.data[['Open', 'Close', 'High', 'Low']].plot(figsize=(16, 4), title='{} OCHL Price'.format(self.symbol.upper()))
+        self.data[['Open', 'Close', 'High', 'Low']].plot(figsize=(16, 4), title='{} OCHL Price'.format(self.symbol.upper()))
 
         plt.figure()
-        ax2 = self.data[['Volume']].plot(figsize=(16, 4), title='{} Volume'.format(self.symbol.upper()))
+        self.data[['Volume']].plot(figsize=(16, 4), title='{} Volume'.format(self.symbol.upper()))
 
         plt.figure()
-        ax3 = (100.0 * asset.returns()).hist(figsize=(16, 4), bins=100, normed=1)
+        ax3 = (100.0 * self.returns()).hist(figsize=(16, 4), bins=100, normed=1)
         ax3.set_title('{} Daily Return Distribution'.format('A'))
-        (100.0 * asset.returns()).plot(kind='kde')
+        (100.0 * self.returns()).plot(kind='kde')
 
         plt.figure()
-        ax4 = (100.0 * asset.returns(freq='M')).hist(figsize=(16, 4), bins=100, normed=1)
+        ax4 = (100.0 * self.returns(freq='M')).hist(figsize=(16, 4), bins=100, normed=1)
         ax4.set_title('{} Monthly Return Distribution'.format('A'))
-        (100.0 * asset.returns(freq='M')).plot(kind='kde')
+        (100.0 * self.returns(freq='M')).plot(kind='kde')
 
     def describe(self):
         """Wrapper for pandas describe()"""
