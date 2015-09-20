@@ -36,7 +36,7 @@ class Portfolio(object):
     define a collection of assets with holdings
     """
 
-    def __init__(self, assets=None, initial_positions=None):
+    def __init__(self, assets=None, initial_positions=None, cash=10000.0):
 
         # create empty tables
         empty_table = pd.DataFrame(
@@ -53,19 +53,19 @@ class Portfolio(object):
             trades[symbol][0] = value * assets[symbol].close[0]
             positions[symbol][:] = value
 
+        self.init_cash = cash
+        self.cash = cash
         self.assets = assets
         self.positions = positions
         self.trades = trades
-        self.fees = copy.deepcopy(empty_table)
 
     def summary(self):
         """ "summarize all the holdings and performance of the portfolio """
         pass
 
-    def trade(self, symbol='', date=-1, amount=0.0, fee=1.0):
+    def trade(self, symbol='', date=-1, amount=0.0, commission_min=1.0, commission=0.0075):
         """ execute a trade and update positions """
-        self.fees[symbol][date] = fee
-        self.trades[symbol][date] = amount * self.assets[symbol].close[date]
+        self.trades[symbol][date] = amount * self.assets[symbol].close[date] + min(commission_min, commission * amount)
         self.positions[symbol][date:] = self.positions[symbol][date] + amount
 
     # Calculate Asset-wise numbers and statistics
@@ -102,6 +102,10 @@ class Portfolio(object):
     def total_value(self, date_range=slice(None, None, None)):
         """calculate portfolio value"""
         return self.values(date_range=date_range).sum(axis=1)
+
+    def total_value(self, date_range=slice(None, None, None)):
+        """calculate portfolio balance (asset value + cash)"""
+        return self.total_value(date_range=date_range) + self.cash
 
     def total_cost_basis(self, date_range=slice(None, None, None)):
         """calculate portfolio cost basis"""
