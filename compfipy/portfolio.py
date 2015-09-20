@@ -65,7 +65,11 @@ class Portfolio(object):
 
     def trade(self, symbol='', date=-1, amount=0.0, commission_min=1.0, commission=0.0075):
         """ execute a trade and update positions """
-        self.trades[symbol][date] = amount * self.assets[symbol].close[date] + min(commission_min, commission * amount)
+
+        trade_price = amount * self.assets[symbol].close[date] + max(commission_min, abs(commission * amount))
+
+        self.cash = self.cash - trade_price
+        self.trades[symbol][date] = trade_price
         self.positions[symbol][date:] = self.positions[symbol][date] + amount
 
     # Calculate Asset-wise numbers and statistics
