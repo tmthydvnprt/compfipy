@@ -36,41 +36,51 @@ class Portfolio(object):
     define a collection of assets with holdings
     """
 
-    def __init__(self, assets=None, initial_positions=None, cash=10000.0):
+    def __init__(self, assets=None, initial_positions=None, init_cash=10000.0):
 
         # create empty tables
-        empty_table = pd.DataFrame(
-            np.zeros((len(assets[0].close), len(assets))),
+        empty_dataframe = pd.DataFrame(
+            np.zeros((len(assets[assets.keys()[0]].close), len(assets))),
             columns=[symbol for symbol in assets.keys()],
-            index=assets[0].close.index
+            index=assets[assets.keys()[0]].close.index
         )
+        empty_series = empty_dataframe[empty_dataframe.keys()[0]]
 
-        positions = copy.deepcopy(empty_table)
-        trades = copy.deepcopy(empty_table)
+        positions = copy.deepcopy(empty_dataframe)
+        trades = copy.deepcopy(empty_dataframe)
+        fees = copy.deepcopy(empty_dataframe)
+        cash = copy.deepcopy(empty_series)
 
-        # initial position if given
-        for symbol, value in initial_positions.items():
-            trades[symbol][0] = value * assets[symbol].close[0]
-            positions[symbol][:] = value
+        # initial trades/positions/cash if given
+        for symbol, shares in initial_positions.items():
+            trades[symbol][0] = shares * assets[symbol].close[0]
+            positions[symbol][:] = shares
+        cash[:] = init_cash
 
-        self.init_cash = cash
+        # store the data in class
+        self.init_cash = init_cash
         self.cash = cash
         self.assets = assets
         self.positions = positions
         self.trades = trades
+        self.fees = fees
 
     def summary(self):
         """ "summarize all the holdings and performance of the portfolio """
         pass
 
-    def trade(self, symbol='', date=-1, amount=0.0, commission_min=1.0, commission=0.0075):
+    def trade(self, symbol='', date=-1, shares=0.0, commission_min=1.0, commission=0.0075):
         """ execute a trade and update positions """
 
-        trade_price = amount * self.assets[symbol].close[date] + max(commission_min, abs(commission * amount))
+        # determine price of trade
+        trade_price = shares * self.assets[symbol].close[date]
+        fee = max(commission_min, abs(commission * shares))
 
-        self.cash = self.cash - trade_price
+        # update records
+        self.cash[date:] = self.cash[date] - trade_price - fee
+        self.fees[symbol][date] = fee
         self.trades[symbol][date] = trade_price
-        self.positions[symbol][date:] = self.positions[symbol][date] + amount
+        self.positions[symbol][date:] = self.positions[symbol][date] + shares
 
     # Calculate Asset-wise numbers and statistics
     def close(self, date_range=slice(None, None, None)):
@@ -91,7 +101,7 @@ class Portfolio(object):
 
     def cost_bases(self, date_range=slice(None, None, None)):
         """ calculate cost basis of assets """
-        costs = self.trades.cumsum()
+        costs = self.trades.cumsum() + self.fees.cumsum()
         return costs[date_range]
 
     def gains(self, date_range=slice(None, None, None)):
