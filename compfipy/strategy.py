@@ -8,94 +8,77 @@ class Strategy(object):
     Defines a particular trade strategy
     """
 
-    def __init__(self,
-        asset,
-        trade_function=None,
-        init_balance=10000.0,
-        init_holding=0.0,
-        buy_limit=1.0,
-        sell_limit=1.0,
-        commission=0.0075,
-        commission_min=1.00):
-        """
-        trade an asset with a specifc trading function
-        """
-        # assumptions
+    def __init__(self, portfolio, commission_min=1.00, commission=0.0075, buy_percent=1.0, sell_percent=1.0):
+        """create base Strategy class"""
+
         self.commission_min = commission_min
         self.commission = commission
-        self.buy_limit = buy_limit
-        self.sell_limit = sell_limit
-        self.init_balance = init_balance
-        self.init_holding = init_holding
+        self.portfolio = portfolio
+        self.buy_percent = buy_percent
+        self.sell_percent = sell_percent
+        self.long_open = {symbol:False for symbol in portfolio.assets.keys()}
+        self.short_open = {symbol:False for symbol in portfolio.assets.keys()}
 
-        # particulars
-        self.asset = asset
-        self.trade_function = trade_function
+    def on_date(self, date):
+        """called for each date of portfolio data, implements trading logic"""
+        pass
 
-        # trade data
-        self.holding = pd.Series(np.zeros(asset.c.shape), index=asset.c.index)
-        self.cash = pd.Series(np.zeros(asset.c.shape), index=asset.c.index)
+    def enter_long(self, symbol, date, shares):
+        self.long_open[symbol] = True
+        self.portfolio.trade(symbol, date, shares, self.commission_min, self.commission)
 
-        # perform trades
-        self.signals = self.generate_signals()
-        self.trade()
+    def exit_long(self, symbol, date, shares):
+        self.long_open[symbol] = False
+        self.portfolio.trade(symbol, date, -1.0 * shares, self.commission_min, self.commission)
 
-    def generate_signals(self):
-        """
-        This functions implements the trading rules defined by the trade function and returns trade signals
-        """
-        # evalute trading funtion
-        signals = self.trade_function(self.asset)
+    def enter_short(self):
+        self.short_open[symbol] = True
+        pass
 
-        # scale by buy/sell limits
-        signals[signals > 0] = self.buy_limit * signals[signals > 0]
-        signals[signals < 0] = self.sell_limit * signals[signals < 0]
+    def exit_short(self):
+        self.short_open[symbol] = False
+        pass
 
-        return signals
-
-    def trade(self, init_balance=None, init_holding=0.0):
-        """trade the asset based on the buy/sell signals"""
-
-        self.init_balance = init_balance if init_balance else self.init_balance
-        self.init_holding = init_holding if init_holding else self.init_holding
-
-        for i, bs in enumerate(self.signals):
-            last_holding = self.holding.iloc[i-1] if i > 0 else self.init_holding
-            last_cash = self.cash.iloc[i-1] if i > 0 else self.init_balance
-
-            # hold position
-            if bs == 0:
-                self.holding.iloc[i] = last_holding
-                self.cash.iloc[i] = last_cash
-            # buy position
-            elif bs > 0:
-                self.holding.iloc[i] = bs * last_cash / asset.c.iloc[i]
-                self.cash.iloc[i] = (1.0 - bs) * last_cash
-            # sell position
-            elif bs < 0:
-                self.holding.iloc[i] = (1.0 - bs) * last_holding
-                self.cash.iloc[i] = bs * last_holding * asset.c.iloc[i]
+    def run(self):
+        """iterates over data"""
+        for date in self.portfolio.cash.index:
+            self.on_date(date)
 
 ################################################################################################################################
 
-def sma_xover_50_200(asset, cash_buy=1.0, holding_sell=1.0):
+class Sma_Xover(Strategy):
     """
     buy when sma(50) crosses above sma(200), sell when sma(50) crosses below sma(200)
     """
 
-    # calculate moving averages
-    sma50 = sma(asset.c, 50)
-    sma200 = sma(asset.c, 200)
+    def on_date(self, date):
+        """iterates over dates"""
 
-    # determine when crossings occur
-    signals = np.sign(np.sign(sma50 - sma200).diff())
+        for symbol in self.portfolio.assets.keys():
 
-    return signals
+            if len(self.portfolio.assets[symbol].c[:date]) > 200:
+
+                # calculate moving averages
+                sma50 = sma(self.portfolio.assets[symbol].c[:date], 50).iloc[-2:]
+                sma200 = sma(self.portfolio.assets[symbol].c[:date], 200).iloc[-2:]
+
+                # determine crossover and direction
+                xover = np.sign(np.sign(sma50 - sma200).diff()).iloc[-1]
+
+                if xover > 0 and not self.long_open[symbol]:
+                    current_price = self.portfolio.assets[symbol].c[date]
+                    shares = (self.buy_percent * self.portfolio.cash[date]) / current_price
+                    self.enter_long(symbol, date, shares)
+                    print 'buy', symbol, date, current_price, shares, current_price * shares
+
+                elif xover < 0 and self.long_open[symbol]:
+                    current_price = self.portfolio.assets[symbol].c[date]
+                    shares = self.sell_percent * self.portfolio.positions[symbol][date]
+                    self.exit_long(symbol, date, shares)
+                    print 'sell', symbol, date, current_price, shares, current_price * shares
 
 def buy_and_hold(asset):
     """
     buy on the first day and keep
     """
-    signals = pd.Series(np.zeros(asset.c.shape), index=asset.c.index)
-
-    return signals
+    pass

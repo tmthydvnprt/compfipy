@@ -52,9 +52,10 @@ class Portfolio(object):
         cash = copy.deepcopy(empty_series)
 
         # initial trades/positions/cash if given
-        for symbol, shares in initial_positions.items():
-            trades[symbol][0] = shares * assets[symbol].close[0]
-            positions[symbol][:] = shares
+        if initial_positions:
+            for symbol, shares in initial_positions.items():
+                trades[symbol][0] = shares * assets[symbol].close[0]
+                positions[symbol][:] = shares
         cash[:] = init_cash
 
         # store the data in class
@@ -117,7 +118,7 @@ class Portfolio(object):
         """calculate portfolio value"""
         return self.values(date_range=date_range).sum(axis=1)
 
-    def total_value(self, date_range=slice(None, None, None)):
+    def total_balance(self, date_range=slice(None, None, None)):
         """calculate portfolio balance (asset value + cash)"""
         return self.total_value(date_range=date_range) + self.cash
 
