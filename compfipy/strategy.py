@@ -25,7 +25,7 @@ class Strategy(object):
             'sell price', 'sell shares', 'sell fees', 'sell date',
             'gain', 'profit', 'loss', 'return', 'win/loose',
             'min', 'min date', 'max', 'max date',
-            'drawdown', 'drawdown time'
+            'drawdown', 'drawdown days'
         ]
         self.record = {symbol:pd.DataFrame(columns=recordings) for symbol in portfolio.assets.keys()}
         self.max = {symbol:[0, None] for symbol in portfolio.assets.keys()}
@@ -65,7 +65,7 @@ class Strategy(object):
             'min date':[None],
             'max date':[None],
             'drawdown':[None],
-            'drawdown time':[None]
+            'drawdown days':[None]
         }
 
         self.record[symbol] = self.record[symbol].append(pd.DataFrame(record), ignore_index=True)
@@ -106,8 +106,8 @@ class Strategy(object):
         self.record[symbol].loc[i, 'min date'] = self.min[symbol][1]
         self.record[symbol].loc[i, 'max date'] = self.max[symbol][1]
 
-        self.record[symbol].loc[i, 'drawdown'] = (self.max[symbol][0] - self.drawdown[symbol][0])  * self.record[symbol].loc[i, 'buy shares']
-        self.record[symbol].loc[i, 'drawdown time'] = self.drawdown[symbol][1] - self.max[symbol][1]
+        self.record[symbol].loc[i, 'drawdown'] = (self.max[symbol][0] - self.drawdown[symbol][0]) * self.record[symbol].loc[i, 'buy shares']
+        self.record[symbol].loc[i, 'drawdown days'] = (self.drawdown[symbol][1] - self.max[symbol][1]).days
 
     def enter_short(self):
         self.short_open[symbol] = True
@@ -167,8 +167,8 @@ class Strategy(object):
                 washes = 0
             max_drawdown = self.record[symbol]['drawdown'].max()
             average_drawdown = self.record[symbol]['drawdown'].mean()
-            max_drawdown_time = self.record[symbol]['drawdown time'].max()
-            average_drawdown_time = self.record[symbol]['drawdown time'].mean()
+            max_drawdown_time = self.record[symbol]['drawdown days'].max()
+            average_drawdown_time = self.record[symbol]['drawdown days'].mean()
 
             performance[symbol] = {
                 'trades': trades,
@@ -183,8 +183,8 @@ class Strategy(object):
                 'average_trade_net_profit' : (profit - loss) / trades,
                 'max_drawdown' : max_drawdown,
                 'average_drawdown' : average_drawdown,
-                'max_drawdown_time' : max_drawdown_time,
-                'average_drawdown_time' : average_drawdown_time
+                'max_drawdown_days' : max_drawdown_time,
+                'average_drawdown_days' : average_drawdown_time
             }
 
         return performance
