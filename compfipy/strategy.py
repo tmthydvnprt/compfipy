@@ -20,7 +20,7 @@ class Strategy(object):
         self.short_open = {symbol:False for symbol in portfolio.assets.keys()}
         self.display_data = []
 
-        record_headers = ['buy price','buy shares','buy fees','sell price','sell shares','sell fees','gain','profit/loss','return','win/loose']
+        record_headers = ['buy price','buy shares','buy fees','sell price','sell shares','sell fees','gain','profit','loss','return','win/loose']
         self.record = {symbol:pd.DataFrame(columns=record_headers) for symbol in portfolio.assets.keys()}
 
     def on_date(self, date, i):
@@ -40,7 +40,8 @@ class Strategy(object):
             'sell shares' : [None],
             'sell fees' : [None],
             'gain' : [None],
-            'profit/loss' : [None],
+            'profit' : [None],
+            'loss' : [None],
             'return' : [None],
             'win/loose' : [None]
         }
@@ -58,18 +59,20 @@ class Strategy(object):
         self.record[symbol].loc[i, 'sell shares'] = shares
         self.record[symbol].loc[i, 'sell fees'] =  max(self.commission_min, abs(self.commission * shares))
 
-
         initial = self.record[symbol].loc[i, 'buy price'] * self.record[symbol].loc[i, 'buy shares']
         final = self.record[symbol].loc[i, 'sell price'] * self.record[symbol].loc[i, 'sell shares']
         fees = self.record[symbol].loc[i, 'sell fees'] + self.record[symbol].loc[i, 'sell fees']
+        gain = (final - initial)
 
-        self.record[symbol].loc[i, 'gain'] = final - initial
-        self.record[symbol].loc[i, 'return'] = (final - initial) / initial
-        self.record[symbol].loc[i, 'profit/loss'] = (final - initial) - fees
+        self.record[symbol].loc[i, 'gain'] = gain
+        self.record[symbol].loc[i, 'return'] = gain / initial
 
-        if self.record[symbol].loc[i, 'profit/loss'] > 0:
+        self.record[symbol].loc[i, 'profit'] = gain if gain > 0 else 0
+        self.record[symbol].loc[i, 'loss'] = (abs(gain) + fees) if gain < 0 else fees
+
+        if gain > 0:
             self.record[symbol].loc[i, 'win/loose'] = 'w'
-        elif  self.record[symbol].loc[i, 'profit/loss'] < 0:
+        elif gain < 0:
             self.record[symbol].loc[i, 'win/loose'] = 'l'
         else:
             self.record[symbol].loc[i, 'win/loose'] = '-'
@@ -100,6 +103,53 @@ class Strategy(object):
         """called at the end of run"""
 
         print tabulate.tabulate(self.display_data, headers=['trade', 'symbol', 'date', 'price', 'shares', 'value', 'cash'])
+        print
+        performance = self.calc_performance()
+
+        assets = [' '] + performance.keys()
+        perf = [performance.values()[0].keys()] + [s.values() for s in performance.values()]
+        perf = [list(x) for x in zip(*perf)]
+
+        print tabulate.tabulate(perf, headers=assets)
+
+    def calc_performance(self):
+        """calculate performance"""
+
+        performance = {}
+        for symbol in self.portfolio.assets.keys():
+
+            trades = len(self.record[symbol])
+            profit = self.record[symbol]['profit'].sum()
+            loss = self.record[symbol]['loss'].sum()
+            try:
+                wins = len(self.record[symbol].groupby('win/loose').groups['w'])
+            except:
+                wins = 0
+            try:
+                losses = len(self.record[symbol].groupby('win/loose').groups['l'])
+            except:
+                losses = 0
+            try:
+                washes = len(self.record[symbol].groupby('win/loose').groups['-'])
+            except:
+                washes = 0
+
+            performance[symbol] = {
+                'trades': trades,
+                'wins': wins,
+                'losses': losses,
+                'washes': washes,
+                'profit': profit,
+                'loss': loss,
+                'net_profit': profit - loss,
+                'profit_factor': profit / loss,
+                'percent_profitable': wins / trades,
+                'average_trade_net_profit' : (profit - loss) / trades
+            }
+
+        return performance
+
+
 
 ################################################################################################################################
 
