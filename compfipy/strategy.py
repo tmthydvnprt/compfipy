@@ -100,13 +100,13 @@ class Strategy(object):
         else:
             self.record[symbol].loc[i, 'win/loose'] = '-'
 
-        self.record[symbol].loc[i, 'min'] = self.min[symbol][0]
-        self.record[symbol].loc[i, 'max'] = self.max[symbol][0]
+        self.record[symbol].loc[i, 'min'] = self.min[symbol][0] * self.record[symbol].loc[i, 'buy shares']
+        self.record[symbol].loc[i, 'max'] = self.max[symbol][0] * self.record[symbol].loc[i, 'buy shares']
 
         self.record[symbol].loc[i, 'min date'] = self.min[symbol][1]
         self.record[symbol].loc[i, 'max date'] = self.max[symbol][1]
 
-        self.record[symbol].loc[i, 'drawdown'] = self.max[symbol][0] - self.drawdown[symbol][0]
+        self.record[symbol].loc[i, 'drawdown'] = (self.max[symbol][0] - self.drawdown[symbol][0])  * self.record[symbol].loc[i, 'buy shares']
         self.record[symbol].loc[i, 'drawdown time'] = self.drawdown[symbol][1] - self.max[symbol][1]
 
     def enter_short(self):
@@ -225,21 +225,32 @@ class Sma_Xover(Strategy):
                 xover = np.sign(np.sign(sma50 - sma200).diff()).iloc[-1]
 
                 if xover > 0 and not self.long_open[symbol]:
-                    current_price = self.portfolio.assets[symbol].c[date]
-                    shares = (self.buy_percent * self.portfolio.cash[date]) / current_price
+
+                    shares = (self.buy_percent * self.portfolio.cash[date]) / price
                     self.enter_long(symbol, date, shares)
 
-                    self.display_data.append(['buy', symbol, str(date.date()), current_price, shares, current_price * shares, self.portfolio.cash[date]])
+                    self.display_data.append(['buy', symbol, str(date.date()), price, shares, price * shares, self.portfolio.cash[date]])
 
                 elif (xover < 0 and self.long_open[symbol]) or (date == self.portfolio.cash.index[-1] and self.long_open[symbol]):
-                    current_price = self.portfolio.assets[symbol].c[date]
                     shares = self.sell_percent * self.portfolio.positions[symbol][date]
                     self.exit_long(symbol, date, shares)
 
-                    self.display_data.append(['sell', symbol, str(date.date()), current_price, shares, current_price * shares, self.portfolio.cash[date]])
+                    self.display_data.append(['sell', symbol, str(date.date()), price, shares, price * shares, self.portfolio.cash[date]])
 
-def buy_and_hold(asset):
+class BuyAndHold(Strategy):
     """
-    buy on the first day and keep
+    buy on the first day, never sell
     """
-    pass
+
+    def on_date(self, date):
+        """iterates over dates"""
+
+        for symbol in self.portfolio.assets.keys():
+
+            if date == self.portfolio.assets[symbol].c.index[0]:
+
+                price = self.portfolio.assets[symbol].c[date]
+                shares = (self.buy_percent * self.portfolio.cash[date]) / price
+                self.enter_long(symbol, date, shares)
+
+                self.display_data.append(['buy', symbol, str(date.date()), price, shares, price * shares, self.portfolio.cash[date]])
