@@ -134,14 +134,17 @@ class Strategy(object):
     def after_run(self):
         """called at the end of run"""
 
+        # display trading data
         print tabulate.tabulate(self.display_data, headers=['trade', 'symbol', 'date', 'price', 'shares', 'value', 'cash'])
         print
-        performance = self.calc_performance()
 
+        # calculate performance
+        performance = self.calc_performance()
         assets = [' '] + performance.keys()
         perf = [performance.values()[0].keys()] + [[p for p in asset_performance.values()] for asset_performance in performance.values()]
         perf = [list(x) for x in zip(*perf)]
 
+        # display performance
         print tabulate.tabulate(perf, headers=assets, floatfmt=".2f")
 
     def calc_performance(self):
