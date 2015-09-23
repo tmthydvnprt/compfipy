@@ -107,10 +107,10 @@ class Strategy(object):
         performance = self.calc_performance()
 
         assets = [' '] + performance.keys()
-        perf = [performance.values()[0].keys()] + [s.values() for s in performance.values()]
+        perf = [performance.values()[0].keys()] + [[fmtn(p) for p in asset_performance.values()] for asset_performance in performance.values()]
         perf = [list(x) for x in zip(*perf)]
 
-        print tabulate.tabulate(perf, headers=assets)
+        print tabulate.tabulate(perf, headers=assets, floatfmt=".2f")
 
     def calc_performance(self):
         """calculate performance"""
