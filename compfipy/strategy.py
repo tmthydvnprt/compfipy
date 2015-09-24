@@ -11,6 +11,7 @@ class Strategy(object):
     def __init__(self, portfolio, commission_min=1.00, commission=0.0075, buy_percent=1.0, sell_percent=1.0):
         """create base Strategy class"""
 
+        self.quiet = False
         self.commission_min = commission_min
         self.commission = commission
         self.portfolio = portfolio
@@ -70,6 +71,8 @@ class Strategy(object):
 
         self.record[symbol] = self.record[symbol].append(pd.DataFrame(record), ignore_index=True)
 
+        return self
+
     def exit_long(self, symbol, date, shares):
 
         self.long_open[symbol] = False
@@ -109,6 +112,8 @@ class Strategy(object):
         self.record[symbol].loc[i, 'drawdown'] = (self.max[symbol][0] - self.drawdown[symbol][0]) * self.record[symbol].loc[i, 'buy shares']
         self.record[symbol].loc[i, 'drawdown days'] = (self.drawdown[symbol][1] - self.max[symbol][1]).days
 
+        return self
+
     def enter_short(self):
         self.short_open[symbol] = True
         pass
@@ -130,22 +135,20 @@ class Strategy(object):
     def before_run(self):
         """called at the start of run"""
         self.display_data = []
+        return self
 
     def after_run(self):
         """called at the end of run"""
 
-        # display trading data
-        print tabulate.tabulate(self.display_data, headers=['trade', 'symbol', 'date', 'price', 'shares', 'value', 'cash'])
-        print
+        if not self.quiet:
+            print tabulate.tabulate(self.display_data, headers=['trade', 'symbol', 'date', 'price', 'shares', 'value', 'cash'])
+            print
 
-        # calculate performance
-        performance = self.calc_performance()
-        assets = [' '] + performance.keys()
-        perf = [performance.values()[0].keys()] + [[p for p in asset_performance.values()] for asset_performance in performance.values()]
-        perf = [list(x) for x in zip(*perf)]
-
-        # display performance
-        print tabulate.tabulate(perf, headers=assets, floatfmt=".2f")
+            performance = self.calc_performance()
+            assets = [' '] + performance.keys()
+            perf = [performance.values()[0].keys()] + [[p for p in asset_performance.values()] for asset_performance in performance.values()]
+            perf = [list(x) for x in zip(*perf)]
+            print tabulate.tabulate(perf, headers=assets, floatfmt=".2f")
 
     def calc_performance(self):
         """calculate performance"""
@@ -194,17 +197,22 @@ class Strategy(object):
 
 ################################################################################################################################
 
-class Sma_Xover(Strategy):
+class SimpleMovingAverageCrossover(Strategy):
     """
     buy when sma(50) crosses above sma(200), sell when sma(50) crosses below sma(200)
     """
+
+    def __init__(self, portfolio, fast, slow):
+        Strategy.__init__(self, portfolio)
+        self.fast = fast
+        self.slow = slow
 
     def on_date(self, date):
         """iterates over dates"""
 
         for symbol in self.portfolio.assets.keys():
 
-            if len(self.portfolio.assets[symbol].c[:date]) > 200:
+            if len(self.portfolio.assets[symbol].c[:date]) > self.slow:
 
                 price = self.portfolio.assets[symbol].c[date]
 
@@ -221,11 +229,11 @@ class Sma_Xover(Strategy):
                     self.drawdown[symbol] = [price, date]
 
                 # calculate moving averages
-                sma50 = sma(self.portfolio.assets[symbol].c[:date], 50).iloc[-2:]
-                sma200 = sma(self.portfolio.assets[symbol].c[:date], 200).iloc[-2:]
+                sma_fast = sma(self.portfolio.assets[symbol].c[:date], self.fast).iloc[-2:]
+                sma_slow = sma(self.portfolio.assets[symbol].c[:date], self.slow).iloc[-2:]
 
                 # determine crossover and direction
-                xover = np.sign(np.sign(sma50 - sma200).diff()).iloc[-1]
+                xover = np.sign(np.sign(sma_fast - sma_slow).diff()).iloc[-1]
 
                 if xover > 0 and not self.long_open[symbol]:
 
@@ -250,10 +258,18 @@ class BuyAndHold(Strategy):
 
         for symbol in self.portfolio.assets.keys():
 
+            price = self.portfolio.assets[symbol].c[date]
+
             if date == self.portfolio.assets[symbol].c.index[0]:
 
-                price = self.portfolio.assets[symbol].c[date]
                 shares = (self.buy_percent * self.portfolio.cash[date]) / price
                 self.enter_long(symbol, date, shares)
 
                 self.display_data.append(['buy', symbol, str(date.date()), price, shares, price * shares, self.portfolio.cash[date]])
+
+            elif date == self.portfolio.assets[symbol].c.index[-1]:
+                shares = self.sell_percent * self.portfolio.positions[symbol][date]
+                self.exit_long(symbol, date, shares)
+
+                self.display_data.append(['sell', symbol, str(date.date()), price, shares, price * shares, self.portfolio.cash[date]])
+        return self
