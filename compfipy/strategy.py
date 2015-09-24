@@ -8,25 +8,47 @@ class Strategy(object):
     Defines a particular trade strategy
     """
 
-    def __init__(self, portfolio, commission_min=1.00, commission=0.0075, buy_percent=1.0, sell_percent=1.0):
+    def __init__(self,
+            portfolio,
+            market,
+            commission_min=1.00,
+            commission=0.0075,
+            buy_percent=1.0,
+            sell_percent=1.0,
+            pm_threshold=0.0,
+            pm_order=1.0,
+            risk_free_return=1.0
+        ):
         """create base Strategy class"""
 
+        # assumptions
         self.quiet = False
         self.commission_min = commission_min
         self.commission = commission
-        self.portfolio = portfolio
         self.buy_percent = buy_percent
         self.sell_percent = sell_percent
+        self.pm_threshold = pm_threshold
+        self.pm_order = pm_order
+        self.risk_free_return = risk_free_return
+
+        # inputs
+        self.portfolio = portfolio
+        self.market = market
+
+        # trading states
         self.long_open = {symbol:False for symbol in portfolio.assets.keys()}
         self.short_open = {symbol:False for symbol in portfolio.assets.keys()}
-        self.display_data = []
 
+        # keep track of intermidiate results for performance
+        self.display_data = []
         recordings = [
             'buy price', 'buy shares', 'buy fees', 'buy date',
             'sell price', 'sell shares', 'sell fees', 'sell date',
             'gain', 'profit', 'loss', 'return', 'win/loose',
-            'min', 'min date', 'max', 'max date',
-            'drawdown', 'drawdown days'
+            'min balance', 'min date', 'max balance', 'max date',
+            'drawdown', 'drawdown days',
+            'volatility', 'expected_return', 'beta', 'lpm', 'hpm',
+            'max', 'mean', 'min'
         ]
         self.record = {symbol:pd.DataFrame(columns=recordings) for symbol in portfolio.assets.keys()}
         self.max = {symbol:[0, None] for symbol in portfolio.assets.keys()}
@@ -61,12 +83,20 @@ class Strategy(object):
             'loss' : [None],
             'return' : [None],
             'win/loose' : [None],
-            'min':[None],
-            'max':[None],
+            'min balance':[None],
+            'max balance':[None],
             'min date':[None],
             'max date':[None],
             'drawdown':[None],
-            'drawdown days':[None]
+            'drawdown days':[None],
+            'volatility':[None],
+            'expected_return':[None],
+            'beta':[None],
+            'lpm':[None],
+            'hpm':[None],
+            'max':[None],
+            'mean':[None],
+            'min':[None]
         }
 
         self.record[symbol] = self.record[symbol].append(pd.DataFrame(record), ignore_index=True)
@@ -103,14 +133,35 @@ class Strategy(object):
         else:
             self.record[symbol].loc[i, 'win/loose'] = '-'
 
-        self.record[symbol].loc[i, 'min'] = self.min[symbol][0] * self.record[symbol].loc[i, 'buy shares']
-        self.record[symbol].loc[i, 'max'] = self.max[symbol][0] * self.record[symbol].loc[i, 'buy shares']
+        self.record[symbol].loc[i, 'min balance'] = self.min[symbol][0] * self.record[symbol].loc[i, 'buy shares']
+        self.record[symbol].loc[i, 'max balance'] = self.max[symbol][0] * self.record[symbol].loc[i, 'buy shares']
 
         self.record[symbol].loc[i, 'min date'] = self.min[symbol][1]
         self.record[symbol].loc[i, 'max date'] = self.max[symbol][1]
 
         self.record[symbol].loc[i, 'drawdown'] = (self.max[symbol][0] - self.drawdown[symbol][0]) * self.record[symbol].loc[i, 'buy shares']
         self.record[symbol].loc[i, 'drawdown days'] = (self.drawdown[symbol][1] - self.max[symbol][1]).days
+
+        time_range = pd.date_range(self.record[symbol].loc[i, 'buy date'], self.record[symbol].loc[i, 'sell date'])
+        trade_prices = self.portfolio.assets[symbol].c[time_range]
+        market_prices = self.market.c[time_range]
+
+        returns = trade_prices.pct_change()
+        market_returns = market_prices.pct_change()
+
+        M = pd.DataFrame({'asset': returns, 'market': market_returns})
+        beta = M.cov()['asset']['market'] / market_returns.std()
+
+        self.record[symbol].loc[i, 'volatility'] = returns.std()
+        self.record[symbol].loc[i, 'expected_return'] = returns.mean()
+        self.record[symbol].loc[i, 'beta'] = beta
+
+        self.record[symbol].loc[i, 'hpm'] = ((returns - self.pm_threshold).clip(0) ** self.pm_order).sum() / len(returns)
+        self.record[symbol].loc[i, 'lpm'] = ((self.pm_threshold - returns).clip(0) ** self.pm_order).sum() / len(returns)
+
+        self.record[symbol].loc[i, 'max'] = trade_prices.max()
+        self.record[symbol].loc[i, 'mean'] = trade_prices.mean()
+        self.record[symbol].loc[i, 'min'] = trade_prices.min()
 
         return self
 
@@ -175,6 +226,13 @@ class Strategy(object):
             average_drawdown = self.record[symbol]['drawdown'].mean()
             max_drawdown_time = self.record[symbol]['drawdown days'].max()
             average_drawdown_time = self.record[symbol]['drawdown days'].mean()
+            vol_risk = self.record[symbol]['volatility'].mean()
+            beta = self.record[symbol]['beta'].mean()
+            lpm_risk = self.record[symbol]['lpm'].mean()
+            e_r = self.record[symbol]['expected_return'].mean()
+
+            treynor_ratio = (e_r - self.risk_free_return) / beta
+            sharpe_ratio = (e_r - self.risk_free_return) / vol_risk
 
             performance[symbol] = {
                 'trades': trades,
@@ -190,7 +248,12 @@ class Strategy(object):
                 'max_drawdown' : max_drawdown,
                 'average_drawdown' : average_drawdown,
                 'max_drawdown_days' : max_drawdown_time,
-                'average_drawdown_days' : average_drawdown_time
+                'average_drawdown_days' : average_drawdown_time,
+                'volatility_risk' : vol_risk,
+                'beta' : beta,
+                'lower_partial_moment_risk' : lpm_risk,
+                't_r' : treynor_ratio,
+                's_r' : sharpe_ratio
             }
 
         return performance
@@ -202,8 +265,8 @@ class SimpleMovingAverageCrossover(Strategy):
     buy when sma(50) crosses above sma(200), sell when sma(50) crosses below sma(200)
     """
 
-    def __init__(self, portfolio, fast, slow):
-        Strategy.__init__(self, portfolio)
+    def __init__(self, portfolio, market, fast, slow):
+        Strategy.__init__(self, portfolio, market)
         self.fast = fast
         self.slow = slow
 
