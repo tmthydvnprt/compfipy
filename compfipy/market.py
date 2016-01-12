@@ -29,7 +29,6 @@ EXCHANGE_ABBR = {
     'Z' : 'BATS'
 }
 
-
 def download_all_symbols():
     """Download current symbols from NASDAQ server, return as DataFrame"""
 
@@ -64,7 +63,10 @@ def download_all_symbols():
     return symbols
 
 def download_google_history(symbols, start, end=datetime.date.today()) :
-    """Download symbol history from Google servers for specified range"""
+    """
+    Download daily symbol history from Google servers for specified range
+Returns DataFrame with Date, Open, Close, Low, High, Volume
+    """
 
     # Set up empty DataFrame
     history = pd.DataFrame({'Open':[],'Close':[],'High':[],'Low':[],'Volume':[]})
