@@ -14,6 +14,11 @@ import numpy as np
 import pandas as pd
 import StringIO
 
+try:
+    import cPickle as pickle
+except:
+    import pickle
+
 # Download constants
 URLPATTERN = 'http://www.google.com/finance/historical?q={symbol}&startdate={start}&enddate={end}&output=csv'
 EXCHANGES = {'', 'NYSE:', 'NASDAQ:', 'NYSEMKT:', 'NYSEARCA:'}
@@ -89,6 +94,15 @@ Returns DataFrame with Date, Open, Close, Low, High, Volume
 
     return history
 
+def log_message(msg, log_location):
+    """Display and log message"""
+    # Display on stdout
+    sys.stdout.write(msg)
+    sys.stdout.flush()
+    # Log to file
+    for location in log_location:
+        with open(location, 'a') as f:
+            f.write(msg)
 
 def update_history(
     symbol_manifest_location='./data/symbols.csv',
@@ -143,7 +157,7 @@ def update_history(
 
     # Times
     now = datetime.datetime.now()
-    today = now.today()
+    today = now.date()
     earliest_date = datetime.date(1900, 1, 1)
 
     # Read in History Status
@@ -156,7 +170,7 @@ def update_history(
 
     # New History Generation
     else:
-        log_and_message('History Status does not exists. Creating Status.\n')
+        log_message('History Status does not exists. Creating Status.\n', log_location)
         history_status = {
             'count': 0,
             'complete': False,
@@ -170,7 +184,7 @@ def update_history(
 
     # Check if history directory exists
     if not os.path.exists(os.path.dirname(history_path)):
-        log_and_message('History directory does not exists. Creating Directory.\n')
+        log_message('History directory does not exists. Creating Directory.\n', log_location)
         os.makedirs(os.path.dirname(history_path))
 
     # If symbol manifest exist enter update mode
@@ -190,7 +204,7 @@ def update_history(
             # Clip end to today if end is in the future
             end = today if end > today else end
 
-            log_and_message('{:%Y-%m-%d %H:%M:%S}: Downloading {} from {} to {}:'.format(now, symbol, start, end))
+            log_message('{:%Y-%m-%d %H:%M:%S}: Downloading {} from {} to {}:'.format(now, symbol, start, end), log_location)
 
             # Download data
             data = download_google_history(symbol, start, end)
@@ -218,16 +232,16 @@ def update_history(
             # Store manifest to disk
             for location in symbol_manifest_location:
                 symbol_manifest.to_csv(location)
-            log_and_message(' {}\n'.format('[ ]' if data.empty else '[x]'))
+            log_message(' {}\n'.format('[ ]' if data.empty else '[x]'), log_location)
 
         else:
-            log_and_message('No Incomplete Symbols. Shut down for the rest of the day.\n')
+            log_message('No Incomplete Symbols. Shut down for the rest of the day.\n', log_location)
             history_status['last'] = True
             done = True
 
     # If symbol manifest doesn't exist begin to generate history
     else:
-        log_and_message('Symbol Manifest does not exist. It will now be generated.\n')
+        log_message('Symbol Manifest does not exist. It will now be generated.\n', log_location)
         # Get DataFrame of symbols from nasdaq
         symbol_manifest = download_all_symbols()
         # Initialize data to track of
