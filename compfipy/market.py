@@ -71,7 +71,7 @@ def download_all_symbols():
 def download_google_history(symbols, start, end=datetime.date.today()) :
     """
     Download daily symbol history from Google servers for specified range
-Returns DataFrame with Date, Open, Close, Low, High, Volume
+    Returns DataFrame with Date, Open, Close, Low, High, Volume
     """
 
     # Set up empty DataFrame
@@ -85,10 +85,10 @@ Returns DataFrame with Date, Open, Close, Low, High, Volume
             'start' : start.strftime('%b %d, %Y'),
             'end' : end.strftime('%b %d, %Y')
         }
-        google_url = URLPATTERN.format(**url_vars)
-        google_string = urllib.urlopen(google_url).read()
-        if (google_string.find('Not Found') < 0) :
-            data = pd.read_csv(StringIO.StringIO(google_string), index_col=0, na_values=['','-'], parse_dates=True).sort_index()
+        url = URLPATTERN.format(**url_vars)
+        result_string = urllib.urlopen(url).read()
+        if (result_string.find('Not Found') < 0) :
+            data = pd.read_csv(StringIO.StringIO(result_string), index_col=0, na_values=['','-'], parse_dates=True).sort_index()
             if len(data.index) > 0  and data.index[0].year == start.year:
                 history = data
             break
