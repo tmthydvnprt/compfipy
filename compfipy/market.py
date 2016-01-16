@@ -22,6 +22,7 @@ except:
 
 # Download constants
 GOOGLE_URL = 'http://www.google.com/finance/historical?q={symbol}&startdate={start}&enddate={end}&output=csv'
+YAHOO_URL = 'http://ichart.finance.yahoo.com/table.csv?s={symbol}&c={start}'
 EXCHANGES = {'', 'NYSE:', 'NASDAQ:', 'NYSEMKT:', 'NYSEARCA:'}
 NASDAQ_URL = 'ftp://ftp.nasdaqtrader.com/SymbolDirectory/'
 NASDAQ_FILE = 'nasdaqlisted.txt'
@@ -90,6 +91,37 @@ def download_google_history(symbols, start, end=datetime.date.today()) :
         if (result_string.find('Not Found') < 0) :
             data = pd.read_csv(StringIO.StringIO(result_string), index_col=0, na_values=['','-'], parse_dates=True).sort_index()
             if len(data.index) > 0  and data.index[0].year == start.year:
+                history = data
+            break
+
+    return history
+
+def download_yahoo_history(symbols, start) :
+    """
+    Download daily symbol history from Yahoo servers for specified range
+    Returns DataFrame with Date, Open, Close, Low, High, Volume
+    """
+
+    # Set up empty DataFrame
+    history = pd.DataFrame({'Open':[],'Close':[],'High':[],'Low':[],'Volume':[]})
+    history.index.name = 'Date'
+
+    # Check each exchange, bounce out once found
+    for exchange in EXCHANGES:
+        url_vars = {
+            'symbol': exchange + symbols,
+            'start' : start.strftime('%Y-%m-%d')
+        }
+        url = YAHOO_URL.format(**url_vars)
+        result_string = urllib.urlopen(url).read()
+        if (result_string.find('Not Found') < 0) :
+            data = pd.read_csv(
+                StringIO.StringIO(result_string),
+                index_col=0,
+                na_values=['','-'],
+                parse_dates=True
+            ).sort_index()
+            if len(data.index) > 0:
                 history = data
             break
 
