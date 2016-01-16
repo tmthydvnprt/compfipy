@@ -76,7 +76,7 @@ def download_google_history(symbols, start, end=datetime.date.today()) :
     """
 
     # Set up empty DataFrame
-    history = pd.DataFrame({'Open':[],'Close':[],'High':[],'Low':[],'Volume':[]})
+    history = pd.DataFrame({'Open':[], 'Close':[], 'High':[], 'Low':[], 'Volume':[]})
     history.index.name = 'Date'
 
     # Check each exchange, bounce out once found
