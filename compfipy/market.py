@@ -21,7 +21,7 @@ except:
     import pickle
 
 # Download constants
-URLPATTERN = 'http://www.google.com/finance/historical?q={symbol}&startdate={start}&enddate={end}&output=csv'
+GOOGLE_URL = 'http://www.google.com/finance/historical?q={symbol}&startdate={start}&enddate={end}&output=csv'
 EXCHANGES = {'', 'NYSE:', 'NASDAQ:', 'NYSEMKT:', 'NYSEARCA:'}
 NASDAQ_URL = 'ftp://ftp.nasdaqtrader.com/SymbolDirectory/'
 NASDAQ_FILE = 'nasdaqlisted.txt'
@@ -85,7 +85,7 @@ def download_google_history(symbols, start, end=datetime.date.today()) :
             'start' : start.strftime('%b %d, %Y'),
             'end' : end.strftime('%b %d, %Y')
         }
-        url = URLPATTERN.format(**url_vars)
+        url = GOOGLE_URL.format(**url_vars)
         result_string = urllib.urlopen(url).read()
         if (result_string.find('Not Found') < 0) :
             data = pd.read_csv(StringIO.StringIO(result_string), index_col=0, na_values=['','-'], parse_dates=True).sort_index()
