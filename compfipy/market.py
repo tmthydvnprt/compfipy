@@ -10,6 +10,7 @@ import json
 import time
 import urllib
 import datetime
+import tabulate
 import numpy as np
 import pandas as pd
 import StringIO
@@ -118,6 +119,7 @@ def update_history(
         history_status_location: file path string to store `.json` status of current history
         log_location: file path string to store `.txt` log of function Operations
         history_path: directory path template string (e.g. `./path/to/history/{}`) to store `.pkl` of each symbol
+        download_offset: the numbers of years to download at a time, defaults to 5
 
         Note: symbol_manifest_location, history_status_location, and log_location can also be passed lists of locations to have
         outputs written to multiple places, however this "master" location will only be read from first item in list (`[0]`).
@@ -130,7 +132,7 @@ def update_history(
         http://www.google.com/finance/historical?q={symbol}&startdate={start}&enddate={end}&output=csv
 
     If no history is found, the function is self contained and will generate it's directory structure and begin
-    downloading all data since 1900-01-01.
+    downloading all data since 1978-01-01.
 
     The function is ment to be an "always on" function that is called over and over running in the background either
     as something in a script that the user always runs or a cron job.
@@ -141,9 +143,9 @@ def update_history(
     until full history is download, after which new history will only be downloaded once per symbol each a day,
     pausing until the next day.
 
-    Anecdotally, Google did not like getting constant requests for intervals under 10 seconds. YMMV. It is also suggested to
+    Anecdotally, Google did not like getting constant requests for intervals under 5 seconds. YMMV. It is also suggested to
     make the requests slightly random instead of exactly x seconds.  Successful downloads were acheived with a random internals
-    between 1 and 10 seconds.  Also please be nice to the servers.
+    between 1 and 5 seconds.
 
     """
 
@@ -159,6 +161,12 @@ def update_history(
     now = datetime.datetime.now()
     today = now.date()
     earliest_date = datetime.date(1900, 1, 1)
+    download_offset = 1
+
+    # Check if history directory exists
+    if not os.path.exists(os.path.dirname(history_path)):
+        os.makedirs(os.path.dirname(history_path))
+        log_message('History directory does not exists. Creating Directory.\n', log_location)
 
     # Read in History Status
     if os.path.exists(history_status_location[0]):
@@ -180,54 +188,57 @@ def update_history(
             'manifest': False,
             'symbol': None,
             'date': None,
+            'number_of_symbols': 0,
+            'downloaded': 0,
+            'download_attempt': 0,
+            'percent_complete': 0.0,
+            'percent_attempt': 0.0
         }
-
-    # Check if history directory exists
-    if not os.path.exists(os.path.dirname(history_path)):
-        log_message('History directory does not exists. Creating Directory.\n', log_location)
-        os.makedirs(os.path.dirname(history_path))
 
     # If symbol manifest exist enter update mode
     if os.path.exists(symbol_manifest_location[0]):
         # Read from disk
         symbol_manifest = pd.read_csv(symbol_manifest_location[0], index_col=0, parse_dates=[6, 7])
-        # If symbol history is not complete, incrementally download history
-        incomplete_symbols = symbol_manifest.loc[symbol_manifest['End'] != today]
+        # If symbol history is not complete, incrementally download history backwards
+        incomplete_symbols = symbol_manifest[~symbol_manifest['Current']]
 
         if len(incomplete_symbols) > 0:
             # Get first incomplete symbol
             symbol = incomplete_symbols.index.tolist()[0]
-            # Get new start date as last end date or earliest history (1900,1,1) date
-            start = earliest_date if pd.isnull(symbol_manifest.loc[symbol]['End']) else symbol_manifest.loc[symbol]['End'].date()
-            # Set new end date to a year from start
-            end = (start + pd.DateOffset(years=1)).date()
-            # Clip end to today if end is in the future
-            end = today if end > today else end
+            # Set end date to today if first download or set to last start
+            end = today if pd.isnull(symbol_manifest.loc[symbol]['End']) else symbol_manifest.loc[symbol]['Start'].date()
+            # Set new start date to a year before end
+            start = (end + pd.DateOffset(years=-download_offset)).date()
+            # Clip end to earliest_date if start is before it
+            start = earliest_date if start < earliest_date else start
 
             log_message('{:%Y-%m-%d %H:%M:%S}: Downloading {} from {} to {}:'.format(now, symbol, start, end), log_location)
 
             # Download data
             data = download_google_history(symbol, start, end)
+            # Stop backward download if data empty
+            if data.empty:
+                symbol_manifest.loc[symbol, 'Current'] = True
             # If that date range returned data
-            if not data.empty:
-                # If no start recorded, this is the first data returned, record start and store data
-                if pd.isnull(symbol_manifest.loc[symbol]['Start']):
-                    symbol_manifest.loc[symbol, 'Start'] = data.index[0].date()
+            else:
+                # If no end recorded, this is the first data returned, record end and store data
+                if pd.isnull(symbol_manifest.loc[symbol]['End']):
+                    symbol_manifest.loc[symbol, 'End'] = data.index[-1].date()
                     with open(history_path.format(symbol + '.pkl'), 'w') as f:
                         pickle.dump(data, f, protocol=2)
                 else:
                     # Get current data, append new data, and write to disk
                     with open(history_path.format(symbol + '.pkl'), 'r') as f:
                         history = pickle.load(f)
-                    history = history.append(data)
+                    history = history.append(data).sort_index()
                     with open(history_path.format(symbol + '.pkl'), 'w') as f:
                         pickle.dump(history, f, protocol=2)
+                # Record start in manifest
+                symbol_manifest.loc[symbol, 'Start'] = data.index[0].date()
 
-            # Record last ending in manifest
-            symbol_manifest.loc[symbol, 'End'] = end
             # Record in status
             history_status['symbol'] = symbol
-            history_status['date'] = str(end)
+            history_status['date'] = str(start)
 
             # Store manifest to disk
             for location in symbol_manifest_location:
@@ -258,8 +269,19 @@ def update_history(
     history_status['last'] = datetime.datetime.now().isoformat()
     history_status['day'] = str(datetime.date.today())
     history_status['count'] += 1
+
+    history_status['number_of_symbols'] = len(symbol_manifest)
+    history_status['downloaded'] = symbol_manifest['Start'].count()
+    history_status['download_attempt'] = symbol_manifest['End'].count()
+    history_status['percent_complete'] = np.round(100.0 * symbol_manifest['Start'].count() / float(len(symbol_manifest)),2)
+    history_status['percent_attempt'] = np.round(100.0 * symbol_manifest['End'].count() / float(len(symbol_manifest)), 2)
+
     for location in history_status_location:
         with open(location, 'w') as f:
-            json.dump(history_status, f)
+            json.dump(history_status, f, indent=4, separators=(',',': '))
+
+    for location in [h.replace('.json', '.txt') for h in history_status_location]:
+        with open(location, 'w') as f:
+            f.write(tabulate.tabulate(history_status.items()).replace(' ', '.'))
 
     return done
