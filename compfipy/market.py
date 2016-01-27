@@ -231,12 +231,12 @@ def update_history(
     if os.path.exists(symbol_manifest_location[0]):
         # Read from disk
         symbol_manifest = pd.read_csv(symbol_manifest_location[0], index_col=0, parse_dates=[6, 7])
-        # If symbol history is not complete, incrementally download history backwards
-        incomplete_symbols = symbol_manifest[~symbol_manifest['Current']]
 
-        if len(incomplete_symbols) > 0:
+        # If past symbol history is not complete, incrementally download history backwards
+        incomplete_history = symbol_manifest[~symbol_manifest['Current']]
+        if len(incomplete_history) > 0:
             # Get first incomplete symbol
-            symbol = incomplete_symbols.index.tolist()[0]
+            symbol = incomplete_history.index.tolist()[0]
             # Set end date to today if first download or set to last start
             end = today if pd.isnull(symbol_manifest.loc[symbol]['End']) else symbol_manifest.loc[symbol]['Start'].date()
             # Set new start date to a year before end
@@ -278,9 +278,50 @@ def update_history(
             log_message(' {}\n'.format('[ ]' if data.empty else '[x]'), log_location)
 
         else:
-            log_message('No Incomplete Symbols. Shut down for the rest of the day.\n', log_location)
-            history_status['last'] = True
-            done = True
+            # If current symbol history is not complete, incrementally download history forwards
+            incomplete_symbols = symbol_manifest.loc[
+                (symbol_manifest['End'] != today) &
+                ~pd.isnull(symbol_manifest['Start'])
+            ]
+            if len(incomplete_symbols) > 0:
+                # Get first incomplete symbol
+                symbol = incomplete_symbols.index.tolist()[0]
+                # Get new start date as last end date
+                start = symbol_manifest.loc[symbol]['End'].date()
+                # Set new end date to a year from start
+                end = (start + pd.DateOffset(years=download_offset)).date()
+                # Clip end to today if end is in the future
+                end = today if end > today else end
+
+                log_message('{:%Y-%m-%d %H:%M:%S}: Downloading {} from {} to {}:'.format(now, symbol, start, end), log_location)
+
+                # Download data
+                data = download_google_history(symbol, start, end)
+                # If that date range returned data
+                if not data.empty:
+                    # Get current data, append new data, and write to disk
+                    with open(history_path.format(symbol + '.pkl'), 'r') as f:
+                        history = pickle.load(f)
+                    history = history.append(data)
+                    with open(history_path.format(symbol + '.pkl'), 'w') as f:
+                        pickle.dump(history, f, protocol=2)
+
+                # Record last ending in manifest
+                symbol_manifest.loc[symbol, 'End'] = end
+
+                # Record in status
+                history_status['symbol'] = symbol
+                history_status['date'] = str(start)
+
+                # Store manifest to disk
+                for location in symbol_manifest_location:
+                    symbol_manifest.to_csv(location)
+                log_message(' {}\n'.format('[ ]' if data.empty else '[x]'), log_location)
+
+            else:
+                log_message('No Incomplete Symbols. Shut down for the rest of the day.\n', log_location)
+                history_status['last'] = True
+                done = True
 
     # If symbol manifest doesn't exist begin to generate history
     else:
