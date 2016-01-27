@@ -195,6 +195,12 @@ def update_history(
     earliest_date = datetime.date(1900, 1, 1)
     download_offset = 1
 
+    # Check if data directory exists
+    for location in symbol_manifest_location:
+        if not os.path.exists(os.path.dirname(location)):
+            os.makedirs(os.path.dirname(location))
+            log_message('Data directory does not exists. Creating Directory.\n', log_location)
+
     # Check if history directory exists
     if not os.path.exists(os.path.dirname(history_path)):
         os.makedirs(os.path.dirname(history_path))
@@ -210,7 +216,6 @@ def update_history(
 
     # New History Generation
     else:
-        log_message('History Status does not exists. Creating Status.\n', log_location)
         history_status = {
             'count': 0,
             'complete': False,
@@ -226,6 +231,7 @@ def update_history(
             'percent_complete': 0.0,
             'percent_attempt': 0.0
         }
+        log_message('History Status does not exists. Creating Status.\n', log_location)
 
     # If symbol manifest exist enter update mode
     if os.path.exists(symbol_manifest_location[0]):
