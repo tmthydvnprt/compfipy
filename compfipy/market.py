@@ -141,7 +141,8 @@ def update_history(
     symbol_manifest_location='./data/symbols.csv',
     history_status_location='./data/history.json',
     log_location='./data/log.txt',
-    history_path='./data/history/{}'
+    history_path='./data/history/{}',
+    source='google'
 ):
     """
     Checks the current history in storage and downloads updates for any incomplete symbol.
@@ -163,10 +164,13 @@ def update_history(
     Symbol History is requested in yearly chucks from Google's unofficial financial API:
         http://www.google.com/finance/historical?q={symbol}&startdate={start}&enddate={end}&output=csv
 
-    If no history is found, the function is self contained and will generate it's directory structure and begin
-    downloading all data since 1978-01-01.
+    or from Yahoo's unofficial financial API:
+        http://ichart.finance.yahoo.com/table.csv?s={symbol}&c={start}
 
-    The function is ment to be an "always on" function that is called over and over running in the background either
+    If no existing history is found on disk, the function is self contained and will generate the directory structure and begin
+    downloading all data since 1977-01-01.
+
+    The function is ment to be an "always on" function that is called over and over, running in the background either
     as something in a script that the user always runs or a cron job.
 
     This needs to be run at least "the number of symbols" times a day once history has been established,
@@ -192,7 +196,7 @@ def update_history(
     # Times
     now = datetime.datetime.now()
     today = now.date()
-    earliest_date = datetime.date(1900, 1, 1)
+    earliest_date = datetime.date(1977, 1, 1)
     download_offset = 1
 
     # Check if data directory exists
@@ -243,22 +247,37 @@ def update_history(
         if len(incomplete_history) > 0:
             # Get first incomplete symbol
             symbol = incomplete_history.index.tolist()[0]
-            # Set end date to today if first download or set to last start
-            end = today if pd.isnull(symbol_manifest.loc[symbol]['End']) else symbol_manifest.loc[symbol]['Start'].date()
-            # Set new start date to a year before end
-            start = (end + pd.DateOffset(years=-download_offset)).date()
-            # Clip end to earliest_date if start is before it
-            start = earliest_date if start < earliest_date else start
+
+            if source is 'yahoo':
+                # Set end date to today
+                end = today
+                # Set new start date to a year before end
+                start = earliest_date
+            else:
+                # Set end date to today if first download or set to last start
+                end = today if pd.isnull(symbol_manifest.loc[symbol]['End']) else symbol_manifest.loc[symbol]['Start'].date()
+                # Set new start date to a year before end
+                start = (end + pd.DateOffset(years=-download_offset)).date()
+                # Clip end to earliest_date if start is before it
+                start = earliest_date if start < earliest_date else start
 
             log_message('{:%Y-%m-%d %H:%M:%S}: Downloading {} from {} to {}:'.format(now, symbol, start, end), log_location)
 
             # Download data
-            data = download_google_history(symbol, start, end)
-            # Stop backward download if data empty
-            if data.empty:
-                symbol_manifest.loc[symbol, 'Current'] = True
-            # If that date range returned data
+            if source is 'yahoo':
+                data = download_yahoo_history(symbol, start)
             else:
+                data = download_google_history(symbol, start, end)
+
+            if source is 'yahoo':
+                # Stop backward download because all years occur at once
+                symbol_manifest.loc[symbol, 'Current'] = True
+            elif source is 'google' and data.empty:
+                # Stop backward download because data is empty
+                symbol_manifest.loc[symbol, 'Current'] = True
+
+            # If that date range returned data
+            if not data.empty:
                 # If no end recorded, this is the first data returned, record end and store data
                 if pd.isnull(symbol_manifest.loc[symbol]['End']):
                     symbol_manifest.loc[symbol, 'End'] = data.index[-1].date()
@@ -302,7 +321,11 @@ def update_history(
                 log_message('{:%Y-%m-%d %H:%M:%S}: Downloading {} from {} to {}:'.format(now, symbol, start, end), log_location)
 
                 # Download data
-                data = download_google_history(symbol, start, end)
+                if source is 'yahoo':
+                    data = download_yahoo_history(symbol, start)
+                else:
+                    data = download_google_history(symbol, start, end)
+
                 # If that date range returned data
                 if not data.empty:
                     # Get current data, append new data, and write to disk
