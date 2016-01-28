@@ -284,10 +284,14 @@ def update_history(
                     with open(history_path.format(symbol + '.pkl'), 'w') as f:
                         pickle.dump(data, f, protocol=2)
                 else:
-                    # Get current data, append new data, and write to disk
+                    # Get current data
                     with open(history_path.format(symbol + '.pkl'), 'r') as f:
                         history = pickle.load(f)
-                    history = history.append(data).sort_index().drop_duplicates()
+                    # Append data
+                    history = history.append(data).sort_index()
+                    # Make sure dupicate dates are removed
+                    history = history[~history.index.duplicated(keep='first')]
+                    # Write to disk
                     with open(history_path.format(symbol + '.pkl'), 'w') as f:
                         pickle.dump(history, f, protocol=2)
                 # Record start in manifest
@@ -328,10 +332,14 @@ def update_history(
 
                 # If that date range returned data
                 if not data.empty:
-                    # Get current data, append new data, and write to disk
+                    # Get current data
                     with open(history_path.format(symbol + '.pkl'), 'r') as f:
                         history = pickle.load(f)
-                    history = history.append(data).sort_index().drop_duplicates()
+                    # Append data
+                    history = history.append(data).sort_index()
+                    # Make sure dupicate dates are removed
+                    history = history[~history.index.duplicated(keep='first')]
+                    # Write to disk
                     with open(history_path.format(symbol + '.pkl'), 'w') as f:
                         pickle.dump(history, f, protocol=2)
 
