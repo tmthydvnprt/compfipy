@@ -316,7 +316,7 @@ def update_history(
                 # Get first incomplete symbol
                 symbol = incomplete_symbols.index.tolist()[0]
                 # Get new start date as last end date
-                start = symbol_manifest.loc[symbol]['End'].date()
+                start = symbol_manifest.loc[symbol]['End'].date() + pd.DateOffset(days=1)
                 # Set new end date to a year from start
                 end = (start + pd.DateOffset(years=download_offset)).date()
                 # Clip end to today if end is in the future
