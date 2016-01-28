@@ -287,7 +287,7 @@ def update_history(
                     # Get current data, append new data, and write to disk
                     with open(history_path.format(symbol + '.pkl'), 'r') as f:
                         history = pickle.load(f)
-                    history = history.append(data).sort_index()
+                    history = history.append(data).sort_index().drop_duplicates()
                     with open(history_path.format(symbol + '.pkl'), 'w') as f:
                         pickle.dump(history, f, protocol=2)
                 # Record start in manifest
@@ -331,7 +331,7 @@ def update_history(
                     # Get current data, append new data, and write to disk
                     with open(history_path.format(symbol + '.pkl'), 'r') as f:
                         history = pickle.load(f)
-                    history = history.append(data)
+                    history = history.append(data).sort_index().drop_duplicates()
                     with open(history_path.format(symbol + '.pkl'), 'w') as f:
                         pickle.dump(history, f, protocol=2)
 
