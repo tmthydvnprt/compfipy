@@ -127,11 +127,12 @@ def download_yahoo_history(symbols, start) :
 
     return history
 
-def log_message(msg, log_location):
+def log_message(msg, log_location, display=True):
     """Display and log message"""
     # Display on stdout
-    sys.stdout.write(msg)
-    sys.stdout.flush()
+    if display:
+        sys.stdout.write(msg)
+        sys.stdout.flush()
     # Log to file
     for location in log_location:
         with open(location, 'a') as f:
@@ -142,7 +143,9 @@ def update_history(
     history_status_location='./data/history.json',
     log_location='./data/log.txt',
     history_path='./data/history/{}',
-    source='google'
+    source='google',
+    log=True,
+    display=True
 ):
     """
     Checks the current history in storage and downloads updates for any incomplete symbol.
@@ -203,18 +206,22 @@ def update_history(
     for location in symbol_manifest_location:
         if not os.path.exists(os.path.dirname(location)):
             os.makedirs(os.path.dirname(location))
-            log_message(
-                'Data directory does not exists. Creating Directory.\n{}'.format(os.path.dirname(location)),
-                log_location
-            )
+            if log:
+                log_message(
+                    'Data directory does not exists. Creating Directory.\n{}'.format(os.path.dirname(location)),
+                    log_location,
+                    display
+                )
 
     # Check if history directory exists
     if not os.path.exists(os.path.dirname(history_path)):
         os.makedirs(os.path.dirname(history_path))
-        log_message(
-            'History directory does not exists. Creating Directory.\n{}'.format(os.path.dirname(history_path)),
-            log_location
-        )
+        if log:
+            log_message(
+                'History directory does not exists. Creating Directory.\n{}'.format(os.path.dirname(history_path)),
+                log_location,
+                display
+            )
 
     # Read in History Status
     if os.path.exists(history_status_location[0]):
@@ -241,7 +248,8 @@ def update_history(
             'percent_complete': 0.0,
             'percent_attempt': 0.0
         }
-        log_message('History Status does not exists. Creating Status.\n', log_location)
+        if log:
+            log_message('History Status does not exists. Creating Status.\n', log_location, display)
 
     # If symbol manifest exist enter update mode
     if os.path.exists(symbol_manifest_location[0]):
@@ -266,8 +274,12 @@ def update_history(
                 start = (end + pd.DateOffset(years=-download_offset)).date()
                 # Clip end to earliest_date if start is before it
                 start = earliest_date if start < earliest_date else start
-
-            log_message('{:%Y-%m-%d %H:%M:%S}: Downloading {} from {} to {}:'.format(now, symbol, start, end), log_location)
+            if log:
+                log_message(
+                    '{:%Y-%m-%d %H:%M:%S}: Downloading {} from {} to {}:'.format(now, symbol, start, end),
+                    log_location,
+                    display
+                )
 
             # Download data
             if source is 'yahoo':
@@ -310,7 +322,8 @@ def update_history(
             # Store manifest to disk
             for location in symbol_manifest_location:
                 symbol_manifest.to_csv(location)
-            log_message(' {}\n'.format('[ ]' if data.empty else '[x]'), log_location)
+            if log:
+                log_message(' {}\n'.format('[ ]' if data.empty else '[x]'), log_location, display)
 
         else:
             # If current symbol history is not complete, incrementally download history forwards
@@ -327,8 +340,12 @@ def update_history(
                 end = (start + pd.DateOffset(years=download_offset)).date()
                 # Clip end to today if end is in the future
                 end = today if end > today else end
-
-                log_message('{:%Y-%m-%d %H:%M:%S}: Downloading {} from {} to {}:'.format(now, symbol, start, end), log_location)
+                if log:
+                    log_message(
+                        '{:%Y-%m-%d %H:%M:%S}: Downloading {} from {} to {}:'.format(now, symbol, start, end),
+                        log_location,
+                        display
+                    )
 
                 # Download data
                 if source is 'yahoo':
@@ -359,16 +376,19 @@ def update_history(
                 # Store manifest to disk
                 for location in symbol_manifest_location:
                     symbol_manifest.to_csv(location)
-                log_message(' {}\n'.format('[ ]' if data.empty else '[x]'), log_location)
+                if log:
+                    log_message(' {}\n'.format('[ ]' if data.empty else '[x]'), log_location, display)
 
             else:
-                log_message('No Incomplete Symbols. Shut down for the rest of the day.\n', log_location)
+                if log:
+                    log_message('No Incomplete Symbols. Shut down for the rest of the day.\n', log_location, display)
                 history_status['last'] = True
                 done = True
 
     # If symbol manifest doesn't exist begin to generate history
     else:
-        log_message('Symbol Manifest does not exist. It will now be generated.\n', log_location)
+        if log:
+            log_message('Symbol Manifest does not exist. It will now be generated.\n', log_location, display)
         # Get DataFrame of symbols from nasdaq
         symbol_manifest = download_all_symbols()
         # Initialize data to track of
