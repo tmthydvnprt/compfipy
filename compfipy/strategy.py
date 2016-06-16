@@ -51,7 +51,7 @@ class Strategy(object):
             'max', 'mean', 'min'
         ]
         self.record = {symbol:pd.DataFrame(columns=recordings) for symbol in portfolio.assets.keys()}
-        self.max = {symbol:[0, None] for symbol in portfolio.assets.keys()}
+        self.max = {symbol:[portfolio.assets[symbol].c.iloc[0], None] for symbol in portfolio.assets.keys()}
         self.min = {symbol:[999999999999999, None] for symbol in portfolio.assets.keys()}
         self.drawdown = {symbol:[999999999999999, None] for symbol in portfolio.assets.keys()}
 
