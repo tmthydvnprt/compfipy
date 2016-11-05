@@ -152,14 +152,14 @@ def update_history(
     Checks the current history in storage and downloads updates for any incomplete symbol.
 
     Inputs:
-        symbol_manifest_location: file path string to store `.csv` manifest of symbols
-        history_status_location: file path string to store `.json` status of current history
-        log_location: file path string to store `.txt` log of function Operations
-        history_path: directory path template string (e.g. `./path/to/history/{}`) to store `.pkl` of each symbol
-        download_offset: the numbers of years to download at a time, defaults to 5
-        source: string identifying data source, can be `'yahoo'` or `'google'`, defaults to `'google'`
-        log: boolean to toggle update process being logged to a file, defaults to True
-        display: boolean to toggle update process being displayed on stdout, defaults to True
+        symbol_manifest_location : file path string to store `.csv` manifest of symbols
+        history_status_location  : file path string to store `.json` status of current history
+        log_location             : file path string to store `.txt` log of function Operations
+        history_path             : directory path template string (e.g. `./path/to/history/{}`) to store `.pkl` of each symbol
+        download_offset          : the numbers of years to download at a time, defaults to 5
+        source                   : string identifying data source, can be `'yahoo'` or `'google'`, defaults to `'google'`
+        log                      : boolean to toggle update process being logged to a file, defaults to True
+        display                  : boolean to toggle update process being displayed on stdout, defaults to True
 
         Note: symbol_manifest_location, history_status_location, and log_location can also be passed lists of locations to have
         outputs written to multiple places, however this "master" location will only be read from first item in list (`[0]`).
