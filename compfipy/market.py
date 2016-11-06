@@ -233,7 +233,10 @@ def update_history(
         with open(history_status_location[0], 'r') as f:
             history_status = json.load(f)
             history_status['day'] = datetime.datetime.strptime(history_status['day'], '%Y-%m-%d').date()
-            history_status['last'] = datetime.datetime.strptime(history_status['last'], '%Y-%m-%dT%H:%M:%S.%f')
+            try:
+                history_status['last'] = datetime.datetime.strptime(history_status['last'], '%Y-%m-%dT%H:%M:%S.%f')
+            except ValueError:
+                history_status['last'] = datetime.datetime.strptime(history_status['last'], '%Y-%m-%dT%H:%M:%S')
             history_status['complete'] = False if history_status['day'] < today else True
 
     # New History Generation
