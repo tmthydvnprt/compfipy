@@ -8,6 +8,7 @@ import os
 import sys
 import json
 import time
+import urllib
 import urllib2
 import datetime
 import tabulate
@@ -87,7 +88,7 @@ def download_google_history(symbols, start, end=datetime.date.today()) :
             'end' : end.strftime('%b %d, %Y')
         }
         url = GOOGLE_URL.format(**url_vars)
-        result_string = urllib2.urlopen(url).read()
+        result_string = urllib.urlopen(url).read()
         if (result_string.find('Not Found') < 0) :
             data = pd.read_csv(StringIO.StringIO(result_string), index_col=0, na_values=['','-'], parse_dates=True).sort_index()
             if len(data.index) > 0  and data.index[0].year == start.year:
@@ -113,7 +114,7 @@ def download_yahoo_history(symbols, start) :
             'start' : start.strftime('%Y-%m-%d')
         }
         url = YAHOO_URL.format(**url_vars)
-        result_string = urllib2.urlopen(url).read()
+        result_string = urllib.urlopen(url).read()
         if (result_string.find('Not Found') < 0) :
             data = pd.read_csv(
                 StringIO.StringIO(result_string),
