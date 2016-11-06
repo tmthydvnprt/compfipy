@@ -304,21 +304,18 @@ def update_history(
                 if pd.isnull(symbol_manifest.loc[symbol]['End']):
                     symbol_manifest.loc[symbol, 'End'] = data.index[-1].date()
                     with open(history_path.format(symbol + '.pkl'), 'w') as f:
-                        pickle.dump(data, f, protocol=2)
+                        pickle.dump(data, f, protocol=0)
                 else:
                     # Get current data
-                    if os.path.isfile(history_path.format(symbol + '.pkl')):
-                        with open(history_path.format(symbol + '.pkl'), 'r') as f:
-                            history = pickle.load(f)
-                    else:
-                        history = pd.DataFrame()
+                    with open(history_path.format(symbol + '.pkl'), 'r') as f:
+                        history = pickle.load(f)
                     # Append data
                     history = history.append(data).sort_index()
                     # Make sure dupicate dates are removed
                     history = history[~history.index.duplicated(keep='first')]
                     # Write to disk
                     with open(history_path.format(symbol + '.pkl'), 'w') as f:
-                        pickle.dump(history, f, protocol=2)
+                        pickle.dump(history, f, protocol=0)
                 # Record start in manifest
                 symbol_manifest.loc[symbol, 'Start'] = data.index[0].date()
 
@@ -370,7 +367,7 @@ def update_history(
                     history = history[~history.index.duplicated(keep='first')]
                     # Write to disk
                     with open(history_path.format(symbol + '.pkl'), 'w') as f:
-                        pickle.dump(history, f, protocol=2)
+                        pickle.dump(history, f, protocol=0)
 
                 # Record last ending in manifest
                 symbol_manifest.loc[symbol, 'End'] = end
