@@ -8,7 +8,7 @@ import os
 import sys
 import json
 import time
-import urllib
+import urllib2
 import datetime
 import tabulate
 import numpy as np
@@ -40,7 +40,7 @@ def download_all_symbols():
     """Download current symbols from NASDAQ server, return as DataFrame"""
 
     # Get NASDAQ symbols
-    nasdaq_text = urllib.urlopen(NASDAQ_URL + NASDAQ_FILE).read()
+    nasdaq_text = urllib2.urlopen(NASDAQ_URL + NASDAQ_FILE).read()
     # Process NASDAQ symbols
     nasdaq = pd.read_csv(StringIO.StringIO(nasdaq_text), delimiter='|')
     # Drop Unneccesary data
@@ -52,7 +52,7 @@ def download_all_symbols():
     nasdaq['NASDAQ Symbol'] = nasdaq['Symbol']
 
     # Get OTHER (NYSE, BATS) symbols
-    other_text = urllib.urlopen(NASDAQ_URL + OTHERS_FILE).read()
+    other_text = urllib2.urlopen(NASDAQ_URL + OTHERS_FILE).read()
     # Process OTHER symbols
     other = pd.read_csv(StringIO.StringIO(other_text), delimiter='|')
     # Drop Unneccesary data
@@ -87,7 +87,7 @@ def download_google_history(symbols, start, end=datetime.date.today()) :
             'end' : end.strftime('%b %d, %Y')
         }
         url = GOOGLE_URL.format(**url_vars)
-        result_string = urllib.urlopen(url).read()
+        result_string = urllib2.urlopen(url).read()
         if (result_string.find('Not Found') < 0) :
             data = pd.read_csv(StringIO.StringIO(result_string), index_col=0, na_values=['','-'], parse_dates=True).sort_index()
             if len(data.index) > 0  and data.index[0].year == start.year:
@@ -113,7 +113,7 @@ def download_yahoo_history(symbols, start) :
             'start' : start.strftime('%Y-%m-%d')
         }
         url = YAHOO_URL.format(**url_vars)
-        result_string = urllib.urlopen(url).read()
+        result_string = urllib2.urlopen(url).read()
         if (result_string.find('Not Found') < 0) :
             data = pd.read_csv(
                 StringIO.StringIO(result_string),
