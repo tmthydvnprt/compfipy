@@ -307,8 +307,11 @@ def update_history(
                         pickle.dump(data, f, protocol=2)
                 else:
                     # Get current data
-                    with open(history_path.format(symbol + '.pkl'), 'r') as f:
-                        history = pickle.load(f)
+                    if os.path.isfile(history_path.format(symbol + '.pkl')):
+                        with open(history_path.format(symbol + '.pkl'), 'r') as f:
+                            history = pickle.load(f)
+                    else:
+                        history = pd.DataFrame()
                     # Append data
                     history = history.append(data).sort_index()
                     # Make sure dupicate dates are removed
