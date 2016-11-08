@@ -44,8 +44,10 @@ def download_all_symbols():
     nasdaq_text = urllib2.urlopen(NASDAQ_URL + NASDAQ_FILE).read()
     # Process NASDAQ symbols
     nasdaq = pd.read_csv(StringIO.StringIO(nasdaq_text), delimiter='|')
-    # Drop Unneccesary data
+    # Drop Unneccesary data (NextShares)
     nasdaq = nasdaq.ix[:, :-1]
+    # Drop Unneccesary Row (File Create Date)
+    nasdaq = nasdaq.iloc[:-1]
     # Set Exchange and ETFness
     nasdaq['ETF']= 'N'
     nasdaq['Exchange']= 'Q'
@@ -56,8 +58,10 @@ def download_all_symbols():
     other_text = urllib2.urlopen(NASDAQ_URL + OTHERS_FILE).read()
     # Process OTHER symbols
     other = pd.read_csv(StringIO.StringIO(other_text), delimiter='|')
-    # Drop Unneccesary data
-    other = other.ix[:, :-1]
+    # Drop Unneccesary Column (NextShares)
+    # other = other.ix[:, :-1]
+    # Drop Unneccesary Row (File Create Date)
+    other = other.iloc[:-1]
     # Clean Columns
     other = other.rename(columns={'ACT Symbol': 'Symbol'})
 
