@@ -74,7 +74,7 @@ def download_all_symbols():
 
     return symbols
 
-def download_google_history(symbols, start, end=datetime.date.today()) :
+def download_google_history(symbols, start, end=(datetime.date.today() - datetime.timedelta(days=1))) :
     """
     Download daily symbol history from Google servers for specified range
     Returns DataFrame with Date, Open, Close, Low, High, Volume
@@ -195,6 +195,8 @@ def update_history(
     make the requests slightly random instead of exactly x seconds.  Successful downloads were acheived with a random internals
     between 1 and 5 seconds.
 
+    Google, also anecdotally, releases the EOD data at 6:25am the next day.
+
     """
 
     # Ensure list type
@@ -210,6 +212,8 @@ def update_history(
     today = now.date()
     earliest_date = datetime.date(1977, 1, 1)
     download_offset = 1
+    # EOD data is not released until the following day so always request yesterday's data
+    request_date = today - datetime.timedelta(days=1)
 
     # Check if data directory exists
     for location in symbol_manifest_location:
@@ -241,7 +245,7 @@ def update_history(
                 history_status['last'] = datetime.datetime.strptime(history_status['last'], '%Y-%m-%dT%H:%M:%S.%f')
             except ValueError:
                 history_status['last'] = datetime.datetime.strptime(history_status['last'], '%Y-%m-%dT%H:%M:%S')
-            history_status['complete'] = False if history_status['day'] < today else True
+            history_status['complete'] = False if history_status['day'] < request_date else True
 
     # New History Generation
     else:
@@ -249,7 +253,7 @@ def update_history(
             'count': 0,
             'complete': False,
             'last': datetime.datetime.now().isoformat(),
-            'day': str(datetime.date.today()),
+            'day': str(request_date),
             'mode': 'build',
             'manifest': False,
             'symbol': None,
@@ -274,13 +278,13 @@ def update_history(
             symbol = incomplete_history.index.tolist()[0]
 
             if source is 'yahoo':
-                # Set end date to today
-                end = today
+                # Set end date to request_date
+                end = request_date
                 # Set new start date to a year before end
                 start = earliest_date
             else:
-                # Set end date to today if first download or set to last start
-                end = today if pd.isnull(symbol_manifest.loc[symbol]['End']) else symbol_manifest.loc[symbol]['Start'].date()
+                # Set end date to request_date if first download or set to last start
+                end = request_date if pd.isnull(symbol_manifest.loc[symbol]['End']) else symbol_manifest.loc[symbol]['Start'].date()
                 # Set new start date to a year before end
                 start = (end + pd.DateOffset(years=-download_offset)).date()
                 # Clip end to earliest_date if start is before it
@@ -338,7 +342,7 @@ def update_history(
         else:
             # If current symbol history is not complete, incrementally download history forwards
             incomplete_symbols = symbol_manifest.loc[
-                (symbol_manifest['End'] != today) &
+                (symbol_manifest['End'] != request_date) &
                 ~pd.isnull(symbol_manifest['Start'])
             ]
             if len(incomplete_symbols) > 0:
@@ -348,8 +352,8 @@ def update_history(
                 start = symbol_manifest.loc[symbol]['End'].date() + pd.DateOffset(days=1)
                 # Set new end date to a year from start
                 end = (start + pd.DateOffset(years=download_offset)).date()
-                # Clip end to today if end is in the future
-                end = today if end > today else end
+                # Clip end to request_date if end is in the future
+                end = request_date if end > request_date else end
                 log_message(
                     '{:%Y-%m-%d %H:%M:%S}: Downloading {} from {} to {}:'.format(now, symbol, start, end),
                     log_location,
@@ -410,7 +414,7 @@ def update_history(
 
     # Store status to disk at the end of the script
     history_status['last'] = datetime.datetime.now().isoformat()
-    history_status['day'] = str(datetime.date.today())
+    history_status['day'] = str(request_date)
     history_status['count'] += 1
 
     history_status['number_of_symbols'] = len(symbol_manifest)
