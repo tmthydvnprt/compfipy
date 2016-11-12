@@ -72,6 +72,9 @@ def download_all_symbols():
     symbols = symbols[COLUMN_ORDER]
     symbols = symbols.set_index('Symbol')
 
+    # Drop Nasdaq test stock symbols (experimentally found)
+    symbols = symbols.drop(['ZJZZT', 'ZVZZC', 'ZVZZT', 'ZWZZT', 'ZXZZT', 'ZXYZ.A'])
+
     return symbols
 
 def download_google_history(symbols, start, end=(datetime.date.today() - datetime.timedelta(days=1))) :
