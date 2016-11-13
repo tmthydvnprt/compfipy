@@ -71,9 +71,9 @@ def nth_week_day_of_month(n, weekday, month=datetime.date.today().month, year=da
     Get the nth weekday of a month during the year.
     """
 
-    if isinstance(weekday, 'str') and len(weekday) == 3:
+    if isinstance(weekday, str) and len(weekday) == 3:
         weekday = list(cal.day_abbr).index(weekday)
-    elif isinstance(weekday, 'str') and len(weekday) > 3:
+    elif isinstance(weekday, str) and len(weekday) > 3:
         weekday = list(cal.day_name).index(weekday)
 
     if n > 0:
