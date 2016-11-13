@@ -42,15 +42,15 @@ EXCHANGE_ABBR = {
 
 # Date Helper Functions
 # ------------------------------------------------------------------------------------------------------------------------------
-def next_open_day(date=dt.date.today()):
+def next_open_day(date=datetime.date.today()):
     """
     Find the next date the NYSE is open.
     """
     # Add one day to current date
-    date = date + dt.timedelta(days=1)
+    date = date + datetime.timedelta(days=1)
     # Continue adding days until the market is open
     while not is_open_on(date):
-        date = date + dt.timedelta(days=1)
+        date = date + datetime.timedelta(days=1)
     return date
 
 def move_weekend_holiday(d):
@@ -59,14 +59,14 @@ def move_weekend_holiday(d):
     """
     # Saturday, make holiday friday before
     if d.weekday() == 5:
-        return d - dt.timedelta(days=1)
+        return d - datetime.timedelta(days=1)
     # Sunday, make holiday monday after
     elif d.weekday() == 6:
-        return d + dt.timedelta(days=1)
+        return d + datetime.timedelta(days=1)
     else:
         return d
 
-def nth_week_day_of_month(n, weekday, month=dt.date.today().month, year=dt.date.today().year):
+def nth_week_day_of_month(n, weekday, month=datetime.date.today().month, year=datetime.date.today().year):
     """
     Get the nth weekday of a month during the year.
     """
@@ -77,19 +77,19 @@ def nth_week_day_of_month(n, weekday, month=dt.date.today().month, year=dt.date.
         weekday = list(cal.day_name).index(weekday)
 
     if n > 0:
-        first_day_of_month = dt.date(year, month, 1)
+        first_day_of_month = datetime.date(year, month, 1)
         weekday_difference = (weekday - first_day_of_month.weekday()) % 7
-        first_weekday_of_month = first_day_of_month + dt.timedelta(days=weekday_difference)
-        return first_weekday_of_month + dt.timedelta(days=(n - 1) * 7)
+        first_weekday_of_month = first_day_of_month + datetime.timedelta(days=weekday_difference)
+        return first_weekday_of_month + datetime.timedelta(days=(n - 1) * 7)
     else:
-        last_day_of_month = dt.date(year, month + 1, 1) - dt.timedelta(days=1)
+        last_day_of_month = datetime.date(year, month + 1, 1) - datetime.timedelta(days=1)
         weekday_difference = (last_day_of_month.weekday() - weekday) % 7
-        last_weekday_of_month = last_day_of_month - dt.timedelta(days=weekday_difference)
-        return last_weekday_of_month - dt.timedelta(days=(abs(n) - 1) * 7)
+        last_weekday_of_month = last_day_of_month - datetime.timedelta(days=weekday_difference)
+        return last_weekday_of_month - datetime.timedelta(days=(abs(n) - 1) * 7)
         # return cal.Calendar(weekday).monthdatescalendar(year,month)[n][0]
         # reply on stackoverflow that this has bugs, didn't work for the third monday in feburary 2016
 
-def nyse_holidays(year=dt.date.today().year):
+def nyse_holidays(year=datetime.date.today().year):
     """
     Calulate the holidays of the NYSE for the given year.
     """
@@ -98,19 +98,19 @@ def nyse_holidays(year=dt.date.today().year):
         return []
     else:
         typical_holidays = [
-            dt.date(year, 1, 1),                                 # New Year's Day
+            datetime.date(year, 1, 1),                                 # New Year's Day
             nth_week_day_of_month(3, 'Mon', 1, year),            # Martin Luther King, Jr. Day
             nth_week_day_of_month(3, 'Mon', 2, year),            # Washington's Birthday (President's Day)
-            dateutil.easter.easter(year) - dt.timedelta(days=2), # Good Friday
+            dateutil.easter.easter(year) - datetime.timedelta(days=2), # Good Friday
             nth_week_day_of_month(-1, 'Mon', 5, year),           # Memorial Day
-            dt.date(year, 7, 4),                                 # Independence Day
+            datetime.date(year, 7, 4),                                 # Independence Day
             nth_week_day_of_month(1, 'Mon', 9, year),            # Labor Day
             nth_week_day_of_month(4, 'Thu', 11, year),           # Thanksgiving Day
-            dt.date(year, 12, 25)                                # Christmas Day
+            datetime.date(year, 12, 25)                                # Christmas Day
         ]
         historical_holidays = [
-            dt.date(2012, 10, 29), # hurricane sandy
-            dt.date(2012, 10, 30), # hurricane sandy
+            datetime.date(2012, 10, 29), # hurricane sandy
+            datetime.date(2012, 10, 30), # hurricane sandy
         ]
         # Grab historical holidays for the year
         special_holidays = [v for v in historical_holidays if v.year == year]
@@ -121,41 +121,41 @@ def nyse_holidays(year=dt.date.today().year):
 
         return holidays
 
-def nyse_close_early_dates(year=dt.date.today().year):
+def nyse_close_early_dates(year=datetime.date.today().year):
     """
     Get dates that the NYSE closes early.
     """
     return [
-        dt.date(year, 6, 3),                       # 1:00pm day before Independence Day
+        datetime.date(year, 6, 3),                       # 1:00pm day before Independence Day
         nth_week_day_of_month(4, 'Wed', 11, year), # 1:00pm day before Thanksgiving Day
-        dt.date(year, 12, 24)                      # 1:00pm day before Christmas Day
+        datetime.date(year, 12, 24)                      # 1:00pm day before Christmas Day
     ]
 
-def closing_time(date=dt.date.today()):
+def closing_time(date=datetime.date.today()):
     """
     Get closing time of the current date.
     """
-    return dt.time(13, 0) if date in nyse_close_early_dates(date.year) else dt.time(16, 0)
+    return datetime.time(13, 0) if date in nyse_close_early_dates(date.year) else datetime.time(16, 0)
 
-def opening_time(date=dt.date.today()):
+def opening_time(date=datetime.date.today()):
     """
     Get opening time of the current date.
     """
-    return dt.time(9, 30)
+    return datetime.time(9, 30)
 
-def is_holiday(date=dt.date.today()):
+def is_holiday(date=datetime.date.today()):
     """
     Return boolean if date is a NYSE holiday.
     """
     return date in nyse_holidays(date.year)
 
-def is_open_on(date=dt.date.today()):
+def is_open_on(date=datetime.date.today()):
     """
     Return boolean if NYSE is open on this date (not weekend or holiday).
     """
     return not date.weekday() >= 5 or is_holiday(date)
 
-def is_open_at(datetime=dt.datetime.today()):
+def is_open_at(datetime=datetime.datetime.today()):
     """
     Return boolean if the NYSE is open at a specific time (includes normal trading hours, close early days and holidays).
     """
@@ -163,7 +163,7 @@ def is_open_at(datetime=dt.datetime.today()):
     if not is_open_on(datetime):
         return False
     else:
-        return dt.time(9, 30) < datetime.time() < closing_time(datetime.date())
+        return datetime.time(9, 30) < datetime.time() < closing_time(datetime.date())
 
 # Market EOD Data Download Functions
 # ------------------------------------------------------------------------------------------------------------------------------
