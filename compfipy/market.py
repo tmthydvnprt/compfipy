@@ -575,6 +575,8 @@ def update_history(
             with open(location, 'w') as f:
                 f.write(tabulate.tabulate(history_status.items()).replace(' ', '.'))
     else:
-        print 'Market was not open on {:%Y-%m-%d}. No EOD data available. If initial (historical) download needed, set trade_days to False'.format(request_date)
+        done = True
+        print 'Market was not open on {:%Y-%m-%d}. No EOD data available.'.format(request_date)
+        print 'If initial (historical) download needed, set trade_days to False'
 
     return done
