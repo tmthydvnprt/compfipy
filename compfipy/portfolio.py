@@ -22,7 +22,7 @@ Define a specifc group of Assets along with functions that pertain to the portfo
 - [ ]
 
 """
-# libs used
+
 import copy
 import datetime as dt
 import pandas as pd
@@ -31,6 +31,8 @@ import scipy.stats
 import collections
 import tabulate
 
+# General Portfolio Class
+# ------------------------------------------------------------------------------------------------------------------------------
 class Portfolio(object):
     """
     define a collection of assets with holdings
@@ -38,7 +40,7 @@ class Portfolio(object):
 
     def __init__(self, assets=None, initial_positions=None, init_cash=10000.0):
 
-        # create empty tables
+        # Create empty tables
         empty_dataframe = pd.DataFrame(
             np.zeros((len(assets[assets.keys()[0]].close), len(assets))),
             columns=[symbol for symbol in assets.keys()],
@@ -51,14 +53,14 @@ class Portfolio(object):
         fees = copy.deepcopy(empty_dataframe)
         cash = copy.deepcopy(empty_series)
 
-        # initial trades/positions/cash if given
+        # Initial trades/positions/cash if given
         if initial_positions:
             for symbol, shares in initial_positions.items():
                 trades[symbol][0] = shares * assets[symbol].close[0]
                 positions[symbol][:] = shares
         cash[:] = init_cash
 
-        # store the data in class
+        # Store the data in class
         self.init_cash = init_cash
         self.cash = cash
         self.assets = assets
@@ -73,11 +75,11 @@ class Portfolio(object):
     def trade(self, symbol='', date=-1, shares=0.0, commission_min=1.0, commission=0.0075):
         """ execute a trade and update positions """
 
-        # determine price of trade
+        # Determine price of trade
         trade_price = shares * self.assets[symbol].close[date]
         fee = max(commission_min, abs(commission * shares))
 
-        # update records
+        # Update records
         self.cash[date:] = self.cash[date] - trade_price - fee
         self.fees[symbol][date] = fee
         self.trades[symbol][date] = trade_price

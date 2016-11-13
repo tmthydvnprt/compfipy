@@ -12,16 +12,19 @@ import urllib
 import urllib2
 import datetime
 import tabulate
+import StringIO
+import dateutil.easter
 import numpy as np
 import pandas as pd
-import StringIO
+import calendar as cal
 
 try:
     import cPickle as pickle
 except:
     import pickle
 
-# Download constants
+# Download Constants
+# ------------------------------------------------------------------------------------------------------------------------------
 GOOGLE_URL = 'http://www.google.com/finance/historical?q={symbol}&startdate={start}&enddate={end}&output=csv'
 YAHOO_URL = 'http://ichart.finance.yahoo.com/table.csv?s={symbol}&c={start}'
 EXCHANGES = {'', 'NYSE:', 'NASDAQ:', 'NYSEMKT:', 'NYSEARCA:'}
@@ -37,8 +40,137 @@ EXCHANGE_ABBR = {
     'Z' : 'BATS'
 }
 
+# Date Helper Functions
+# ------------------------------------------------------------------------------------------------------------------------------
+def next_open_day(date=dt.date.today()):
+    """
+    Find the next date the NYSE is open.
+    """
+    # Add one day to current date
+    date = date + dt.timedelta(days=1)
+    # Continue adding days until the market is open
+    while not is_open_on(date):
+        date = date + dt.timedelta(days=1)
+    return date
+
+def move_weekend_holiday(d):
+    """
+    If the holiday is part of the weekend, move it to the appropriate day.
+    """
+    # Saturday, make holiday friday before
+    if d.weekday() == 5:
+        return d - dt.timedelta(days=1)
+    # Sunday, make holiday monday after
+    elif d.weekday() == 6:
+        return d + dt.timedelta(days=1)
+    else:
+        return d
+
+def nth_week_day_of_month(n, weekday, month=dt.date.today().month, year=dt.date.today().year):
+    """
+    Get the nth weekday of a month during the year.
+    """
+
+    if isinstance(weekday, 'str') and len(weekday) == 3:
+        weekday = list(cal.day_abbr).index(weekday)
+    elif isinstance(weekday, 'str') and len(weekday) > 3:
+        weekday = list(cal.day_name).index(weekday)
+
+    if n > 0:
+        first_day_of_month = dt.date(year, month, 1)
+        weekday_difference = (weekday - first_day_of_month.weekday()) % 7
+        first_weekday_of_month = first_day_of_month + dt.timedelta(days=weekday_difference)
+        return first_weekday_of_month + dt.timedelta(days=(n - 1) * 7)
+    else:
+        last_day_of_month = dt.date(year, month + 1, 1) - dt.timedelta(days=1)
+        weekday_difference = (last_day_of_month.weekday() - weekday) % 7
+        last_weekday_of_month = last_day_of_month - dt.timedelta(days=weekday_difference)
+        return last_weekday_of_month - dt.timedelta(days=(abs(n) - 1) * 7)
+        # return cal.Calendar(weekday).monthdatescalendar(year,month)[n][0]
+        # reply on stackoverflow that this has bugs, didn't work for the third monday in feburary 2016
+
+def nyse_holidays(year=dt.date.today().year):
+    """
+    Calulate the holidays of the NYSE for the given year.
+    """
+    if year < 1817:
+        print 'The NYSE was not open in ' + str(year) +'! It was founded in March 8, 1817. Returning empty list []'
+        return []
+    else:
+        typical_holidays = [
+            dt.date(year, 1, 1),                                 # New Year's Day
+            nth_week_day_of_month(3, 'Mon', 1, year),            # Martin Luther King, Jr. Day
+            nth_week_day_of_month(3, 'Mon', 2, year),            # Washington's Birthday (President's Day)
+            dateutil.easter.easter(year) - dt.timedelta(days=2), # Good Friday
+            nth_week_day_of_month(-1, 'Mon', 5, year),           # Memorial Day
+            dt.date(year, 7, 4),                                 # Independence Day
+            nth_week_day_of_month(1, 'Mon', 9, year),            # Labor Day
+            nth_week_day_of_month(4, 'Thu', 11, year),           # Thanksgiving Day
+            dt.date(year, 12, 25)                                # Christmas Day
+        ]
+        historical_holidays = [
+            dt.date(2012, 10, 29), # hurricane sandy
+            dt.date(2012, 10, 30), # hurricane sandy
+        ]
+        # Grab historical holidays for the year
+        special_holidays = [v for v in historical_holidays if v.year == year]
+
+        # Alter weekend holidays and add special holidays
+        holidays = map(move_weekend_holiday, typical_holidays) + special_holidays
+        holidays.sort()
+
+        return holidays
+
+def nyse_close_early_dates(year=dt.date.today().year):
+    """
+    Get dates that the NYSE closes early.
+    """
+    return [
+        dt.date(year, 6, 3),                       # 1:00pm day before Independence Day
+        nth_week_day_of_month(4, 'Wed', 11, year), # 1:00pm day before Thanksgiving Day
+        dt.date(year, 12, 24)                      # 1:00pm day before Christmas Day
+    ]
+
+def closing_time(date=dt.date.today()):
+    """
+    Get closing time of the current date.
+    """
+    return dt.time(13, 0) if date in nyse_close_early_dates(date.year) else dt.time(16, 0)
+
+def opening_time(date=dt.date.today()):
+    """
+    Get opening time of the current date.
+    """
+    return dt.time(9, 30)
+
+def is_holiday(date=dt.date.today()):
+    """
+    Return boolean if date is a NYSE holiday.
+    """
+    return date in nyse_holidays(date.year)
+
+def is_open_on(date=dt.date.today()):
+    """
+    Return boolean if NYSE is open on this date (not weekend or holiday).
+    """
+    return not date.weekday() >= 5 or is_holiday(date)
+
+def is_open_at(datetime=dt.datetime.today()):
+    """
+    Return boolean if the NYSE is open at a specific time (includes normal trading hours, close early days and holidays).
+    """
+    #if weekend or holiday
+    if not is_open_on(datetime):
+        return False
+    else:
+        return dt.time(9, 30) < datetime.time() < closing_time(datetime.date())
+
+# Market EOD Data Download Functions
+# ------------------------------------------------------------------------------------------------------------------------------
 def download_all_symbols():
-    """Download current symbols from NASDAQ server, return as DataFrame"""
+    """
+    Download current symbols from NASDAQ server, return as DataFrame.
+    """
 
     # Get NASDAQ symbols
     nasdaq_text = urllib2.urlopen(NASDAQ_URL + NASDAQ_FILE).read()
@@ -79,8 +211,8 @@ def download_all_symbols():
 
 def download_google_history(symbols, start, end=(datetime.date.today() - datetime.timedelta(days=1))) :
     """
-    Download daily symbol history from Google servers for specified range
-    Returns DataFrame with Date, Open, Close, Low, High, Volume
+    Download daily symbol history from Google servers for specified range.
+    Returns DataFrame with Date, Open, Close, Low, High, Volume.
     """
 
     # Set up empty DataFrame
@@ -106,8 +238,8 @@ def download_google_history(symbols, start, end=(datetime.date.today() - datetim
 
 def download_yahoo_history(symbols, start) :
     """
-    Download daily symbol history from Yahoo servers for specified range
-    Returns DataFrame with Date, Open, Close, Low, High, Volume
+    Download daily symbol history from Yahoo servers for specified range.
+    Returns DataFrame with Date, Open, Close, Low, High, Volume.
     """
 
     # Set up empty DataFrame
@@ -136,7 +268,9 @@ def download_yahoo_history(symbols, start) :
     return history
 
 def log_message(msg, log_location, log=True, display=True):
-    """Display and log message"""
+    """
+    Display and log message.
+    """
     # Display on stdout
     if display:
         sys.stdout.write(msg)
@@ -154,7 +288,9 @@ def update_history(
     history_path='./data/history/{}',
     source='google',
     log=True,
-    display=True
+    display=True,
+    trade_days=True,
+    force_day=None
 ):
     """
     Checks the current history in storage and downloads updates for any incomplete symbol.
@@ -168,6 +304,8 @@ def update_history(
         source                   : string identifying data source, can be `'yahoo'` or `'google'`, defaults to `'google'`
         log                      : boolean to toggle update process being logged to a file, defaults to True
         display                  : boolean to toggle update process being displayed on stdout, defaults to True
+        trade_days               : only attempt downloads on trading days
+        force_day                : force a specific end day instead of using yesterday
 
         Note: symbol_manifest_location, history_status_location, and log_location can also be passed lists of locations to have
         outputs written to multiple places, however this "master" location will only be read from first item in list (`[0]`).
@@ -215,148 +353,86 @@ def update_history(
     today = now.date()
     earliest_date = datetime.date(1977, 1, 1)
     download_offset = 1
-    # EOD data is not released until the following day so always request yesterday's data
-    request_date = today - datetime.timedelta(days=1)
+    # EOD data is not released until the following day so always request yesterday's data, unless a force_day is input
+    request_date = force_day if force_day else today - datetime.timedelta(days=1)
 
-    # Check if data directory exists
-    for location in symbol_manifest_location:
-        if not os.path.exists(os.path.dirname(location)):
-            os.makedirs(os.path.dirname(location))
+    # Only procede with downloads if the market was open or non-trade day override
+    if is_open_on(request_date) or not trade_days:
+
+        # Check if data directory exists
+        for location in symbol_manifest_location:
+            if not os.path.exists(os.path.dirname(location)):
+                os.makedirs(os.path.dirname(location))
+                log_message(
+                    'Data directory does not exists. Creating Directory.\n{}'.format(os.path.dirname(location)),
+                    log_location,
+                    log,
+                    display
+                )
+
+        # Check if history directory exists
+        if not os.path.exists(os.path.dirname(history_path)):
+            os.makedirs(os.path.dirname(history_path))
             log_message(
-                'Data directory does not exists. Creating Directory.\n{}'.format(os.path.dirname(location)),
+                'History directory does not exists. Creating Directory.\n{}'.format(os.path.dirname(history_path)),
                 log_location,
                 log,
                 display
             )
 
-    # Check if history directory exists
-    if not os.path.exists(os.path.dirname(history_path)):
-        os.makedirs(os.path.dirname(history_path))
-        log_message(
-            'History directory does not exists. Creating Directory.\n{}'.format(os.path.dirname(history_path)),
-            log_location,
-            log,
-            display
-        )
+        # Read in History Status
+        if os.path.exists(history_status_location[0]):
+            with open(history_status_location[0], 'r') as f:
+                history_status = json.load(f)
+                history_status['day'] = datetime.datetime.strptime(history_status['day'], '%Y-%m-%d').date()
+                try:
+                    history_status['last'] = datetime.datetime.strptime(history_status['last'], '%Y-%m-%dT%H:%M:%S.%f')
+                except ValueError:
+                    history_status['last'] = datetime.datetime.strptime(history_status['last'], '%Y-%m-%dT%H:%M:%S')
+                history_status['complete'] = False if history_status['day'] < request_date else True
 
-    # Read in History Status
-    if os.path.exists(history_status_location[0]):
-        with open(history_status_location[0], 'r') as f:
-            history_status = json.load(f)
-            history_status['day'] = datetime.datetime.strptime(history_status['day'], '%Y-%m-%d').date()
-            try:
-                history_status['last'] = datetime.datetime.strptime(history_status['last'], '%Y-%m-%dT%H:%M:%S.%f')
-            except ValueError:
-                history_status['last'] = datetime.datetime.strptime(history_status['last'], '%Y-%m-%dT%H:%M:%S')
-            history_status['complete'] = False if history_status['day'] < request_date else True
-
-    # New History Generation
-    else:
-        history_status = {
-            'count': 0,
-            'complete': False,
-            'last': datetime.datetime.now().isoformat(),
-            'day': str(request_date),
-            'mode': 'build',
-            'manifest': False,
-            'symbol': None,
-            'date': None,
-            'number_of_symbols': 0,
-            'downloaded': 0,
-            'download_attempt': 0,
-            'percent_complete': 0.0,
-            'percent_attempt': 0.0
-        }
-        log_message('History Status does not exists. Creating Status.\n', log_location, log, display)
-
-    # If symbol manifest exist enter update mode
-    if os.path.exists(symbol_manifest_location[0]):
-        # Read from disk
-        symbol_manifest = pd.read_csv(symbol_manifest_location[0], index_col=0, parse_dates=[6, 7])
-
-        # If past symbol history is not complete, incrementally download history backwards
-        incomplete_history = symbol_manifest[~symbol_manifest['Current']]
-        if len(incomplete_history) > 0:
-            # Get first incomplete symbol
-            symbol = incomplete_history.index.tolist()[0]
-
-            if source is 'yahoo':
-                # Set end date to request_date
-                end = request_date
-                # Set new start date to a year before end
-                start = earliest_date
-            else:
-                # Set end date to request_date if first download or set to last start
-                end = request_date if pd.isnull(symbol_manifest.loc[symbol]['End']) else symbol_manifest.loc[symbol]['Start'].date()
-                # Set new start date to a year before end
-                start = (end + pd.DateOffset(years=-download_offset)).date()
-                # Clip end to earliest_date if start is before it
-                start = earliest_date if start < earliest_date else start
-            log_message(
-                '{:%Y-%m-%d %H:%M:%S}: Downloading {} from {} to {}:'.format(now, symbol, start, end),
-                log_location,
-                log,
-                display
-            )
-
-            # Download data
-            if source is 'yahoo':
-                data = download_yahoo_history(symbol, start)
-            else:
-                data = download_google_history(symbol, start, end)
-
-            if source is 'yahoo':
-                # Stop backward download because all years occur at once
-                symbol_manifest.loc[symbol, 'Current'] = True
-            elif source is 'google' and data.empty:
-                # Stop backward download because data is empty
-                symbol_manifest.loc[symbol, 'Current'] = True
-
-            # If that date range returned data
-            if not data.empty:
-                # If no end recorded, this is the first data returned, record end and store data
-                if pd.isnull(symbol_manifest.loc[symbol]['End']):
-                    symbol_manifest.loc[symbol, 'End'] = data.index[-1].date()
-                    with open(history_path.format(symbol + '.pkl'), 'w') as f:
-                        pickle.dump(data, f, protocol=0)
-                else:
-                    # Get current data
-                    with open(history_path.format(symbol + '.pkl'), 'r') as f:
-                        history = pickle.load(f)
-                    # Append data
-                    history = history.append(data).sort_index()
-                    # Make sure dupicate dates are removed
-                    history = history[~history.index.duplicated(keep='first')]
-                    # Write to disk
-                    with open(history_path.format(symbol + '.pkl'), 'w') as f:
-                        pickle.dump(history, f, protocol=0)
-                # Record start in manifest
-                symbol_manifest.loc[symbol, 'Start'] = data.index[0].date()
-
-            # Record in status
-            history_status['symbol'] = symbol
-            history_status['date'] = str(start)
-
-            # Store manifest to disk
-            for location in symbol_manifest_location:
-                symbol_manifest.to_csv(location)
-            log_message(' {}\n'.format('[ ]' if data.empty else '[x]'), log_location, log, display)
-
+        # New History Generation
         else:
-            # If current symbol history is not complete, incrementally download history forwards
-            incomplete_symbols = symbol_manifest.loc[
-                (symbol_manifest['End'] != request_date) &
-                ~pd.isnull(symbol_manifest['Start'])
-            ]
-            if len(incomplete_symbols) > 0:
+            history_status = {
+                'count': 0,
+                'complete': False,
+                'last': datetime.datetime.now().isoformat(),
+                'day': str(request_date),
+                'mode': 'build',
+                'manifest': False,
+                'symbol': None,
+                'date': None,
+                'number_of_symbols': 0,
+                'downloaded': 0,
+                'download_attempt': 0,
+                'percent_complete': 0.0,
+                'percent_attempt': 0.0
+            }
+            log_message('History Status does not exists. Creating Status.\n', log_location, log, display)
+
+        # If symbol manifest exist enter update mode
+        if os.path.exists(symbol_manifest_location[0]):
+            # Read from disk
+            symbol_manifest = pd.read_csv(symbol_manifest_location[0], index_col=0, parse_dates=[6, 7])
+
+            # If past symbol history is not complete, incrementally download history backwards
+            incomplete_history = symbol_manifest[~symbol_manifest['Current']]
+            if len(incomplete_history) > 0:
                 # Get first incomplete symbol
-                symbol = incomplete_symbols.index.tolist()[0]
-                # Get new start date as last end date
-                start = symbol_manifest.loc[symbol]['End'].date() + pd.DateOffset(days=1)
-                # Set new end date to a year from start
-                end = (start + pd.DateOffset(years=download_offset)).date()
-                # Clip end to request_date if end is in the future
-                end = request_date if end > request_date else end
+                symbol = incomplete_history.index.tolist()[0]
+
+                if source is 'yahoo':
+                    # Set end date to request_date
+                    end = request_date
+                    # Set new start date to a year before end
+                    start = earliest_date
+                else:
+                    # Set end date to request_date if first download or set to last start
+                    end = request_date if pd.isnull(symbol_manifest.loc[symbol]['End']) else symbol_manifest.loc[symbol]['Start'].date()
+                    # Set new start date to a year before end
+                    start = (end + pd.DateOffset(years=-download_offset)).date()
+                    # Clip end to earliest_date if start is before it
+                    start = earliest_date if start < earliest_date else start
                 log_message(
                     '{:%Y-%m-%d %H:%M:%S}: Downloading {} from {} to {}:'.format(now, symbol, start, end),
                     log_location,
@@ -370,21 +446,33 @@ def update_history(
                 else:
                     data = download_google_history(symbol, start, end)
 
+                if source is 'yahoo':
+                    # Stop backward download because all years occur at once
+                    symbol_manifest.loc[symbol, 'Current'] = True
+                elif source is 'google' and data.empty:
+                    # Stop backward download because data is empty
+                    symbol_manifest.loc[symbol, 'Current'] = True
+
                 # If that date range returned data
                 if not data.empty:
-                    # Get current data
-                    with open(history_path.format(symbol + '.pkl'), 'r') as f:
-                        history = pickle.load(f)
-                    # Append data
-                    history = history.append(data).sort_index()
-                    # Make sure dupicate dates are removed
-                    history = history[~history.index.duplicated(keep='first')]
-                    # Write to disk
-                    with open(history_path.format(symbol + '.pkl'), 'w') as f:
-                        pickle.dump(history, f, protocol=0)
-
-                # Record last ending in manifest
-                symbol_manifest.loc[symbol, 'End'] = end
+                    # If no end recorded, this is the first data returned, record end and store data
+                    if pd.isnull(symbol_manifest.loc[symbol]['End']):
+                        symbol_manifest.loc[symbol, 'End'] = data.index[-1].date()
+                        with open(history_path.format(symbol + '.pkl'), 'w') as f:
+                            pickle.dump(data, f, protocol=0)
+                    else:
+                        # Get current data
+                        with open(history_path.format(symbol + '.pkl'), 'r') as f:
+                            history = pickle.load(f)
+                        # Append data
+                        history = history.append(data).sort_index()
+                        # Make sure dupicate dates are removed
+                        history = history[~history.index.duplicated(keep='first')]
+                        # Write to disk
+                        with open(history_path.format(symbol + '.pkl'), 'w') as f:
+                            pickle.dump(history, f, protocol=0)
+                    # Record start in manifest
+                    symbol_manifest.loc[symbol, 'Start'] = data.index[0].date()
 
                 # Record in status
                 history_status['symbol'] = symbol
@@ -396,42 +484,97 @@ def update_history(
                 log_message(' {}\n'.format('[ ]' if data.empty else '[x]'), log_location, log, display)
 
             else:
-                log_message('No Incomplete Symbols. Shut down for the rest of the day.\n', log_location, log, display)
-                history_status['last'] = True
-                done = True
+                # If current symbol history is not complete, incrementally download history forwards
+                incomplete_symbols = symbol_manifest.loc[
+                    (symbol_manifest['End'] != request_date) &
+                    ~pd.isnull(symbol_manifest['Start'])
+                ]
+                if len(incomplete_symbols) > 0:
+                    # Get first incomplete symbol
+                    symbol = incomplete_symbols.index.tolist()[0]
+                    # Get new start date as last end date
+                    start = symbol_manifest.loc[symbol]['End'].date() + pd.DateOffset(days=1)
+                    # Set new end date to a year from start
+                    end = (start + pd.DateOffset(years=download_offset)).date()
+                    # Clip end to request_date if end is in the future
+                    end = request_date if end > request_date else end
+                    log_message(
+                        '{:%Y-%m-%d %H:%M:%S}: Downloading {} from {} to {}:'.format(now, symbol, start, end),
+                        log_location,
+                        log,
+                        display
+                    )
 
-    # If symbol manifest doesn't exist begin to generate history
+                    # Download data
+                    if source is 'yahoo':
+                        data = download_yahoo_history(symbol, start)
+                    else:
+                        data = download_google_history(symbol, start, end)
+
+                    # If that date range returned data
+                    if not data.empty:
+                        # Get current data
+                        with open(history_path.format(symbol + '.pkl'), 'r') as f:
+                            history = pickle.load(f)
+                        # Append data
+                        history = history.append(data).sort_index()
+                        # Make sure dupicate dates are removed
+                        history = history[~history.index.duplicated(keep='first')]
+                        # Write to disk
+                        with open(history_path.format(symbol + '.pkl'), 'w') as f:
+                            pickle.dump(history, f, protocol=0)
+
+                    # Record last ending in manifest
+                    symbol_manifest.loc[symbol, 'End'] = end
+
+                    # Record in status
+                    history_status['symbol'] = symbol
+                    history_status['date'] = str(start)
+
+                    # Store manifest to disk
+                    for location in symbol_manifest_location:
+                        symbol_manifest.to_csv(location)
+                    log_message(' {}\n'.format('[ ]' if data.empty else '[x]'), log_location, log, display)
+
+                else:
+                    log_message('No Incomplete Symbols. Shut down for the rest of the day.\n', log_location, log, display)
+                    history_status['last'] = True
+                    done = True
+
+        # If symbol manifest doesn't exist begin to generate history
+        else:
+            log_message('Symbol Manifest does not exist. It will now be generated.\n', log_location, log, display)
+            # Get DataFrame of symbols from nasdaq
+            symbol_manifest = download_all_symbols()
+            # Initialize data to track of
+            symbol_manifest['Start'] = None
+            symbol_manifest['End'] = None
+            symbol_manifest['Current'] = False
+            # Store to disk
+            for location in symbol_manifest_location:
+                symbol_manifest.to_csv(location)
+            # Status
+            history_status['manifest'] = True
+
+        # Store status to disk at the end of the script
+        history_status['last'] = datetime.datetime.now().isoformat()
+        history_status['day'] = str(request_date)
+        history_status['count'] += 1
+
+        history_status['number_of_symbols'] = len(symbol_manifest)
+        history_status['downloaded'] = symbol_manifest['Start'].count()
+        history_status['download_attempt'] = symbol_manifest['End'].count()
+        history_status['percent_complete'] = np.round(100.0 * symbol_manifest['Start'].count() / float(len(symbol_manifest)),2)
+        history_status['percent_attempt'] = np.round(100.0 * symbol_manifest['End'].count() / float(len(symbol_manifest)), 2)
+
+        for location in history_status_location:
+            with open(location, 'w') as f:
+                json.dump(history_status, f, indent=4, separators=(',',': '))
+
+        for location in [h.replace('.json', '.txt') for h in history_status_location]:
+            with open(location, 'w') as f:
+                f.write(tabulate.tabulate(history_status.items()).replace(' ', '.'))
     else:
-        log_message('Symbol Manifest does not exist. It will now be generated.\n', log_location, log, display)
-        # Get DataFrame of symbols from nasdaq
-        symbol_manifest = download_all_symbols()
-        # Initialize data to track of
-        symbol_manifest['Start'] = None
-        symbol_manifest['End'] = None
-        symbol_manifest['Current'] = False
-        # Store to disk
-        for location in symbol_manifest_location:
-            symbol_manifest.to_csv(location)
-        # Status
-        history_status['manifest'] = True
-
-    # Store status to disk at the end of the script
-    history_status['last'] = datetime.datetime.now().isoformat()
-    history_status['day'] = str(request_date)
-    history_status['count'] += 1
-
-    history_status['number_of_symbols'] = len(symbol_manifest)
-    history_status['downloaded'] = symbol_manifest['Start'].count()
-    history_status['download_attempt'] = symbol_manifest['End'].count()
-    history_status['percent_complete'] = np.round(100.0 * symbol_manifest['Start'].count() / float(len(symbol_manifest)),2)
-    history_status['percent_attempt'] = np.round(100.0 * symbol_manifest['End'].count() / float(len(symbol_manifest)), 2)
-
-    for location in history_status_location:
-        with open(location, 'w') as f:
-            json.dump(history_status, f, indent=4, separators=(',',': '))
-
-    for location in [h.replace('.json', '.txt') for h in history_status_location]:
-        with open(location, 'w') as f:
-            f.write(tabulate.tabulate(history_status.items()).replace(' ', '.'))
+        print 'Market was not open on {:%Y-%m-%d}. No EOD data available. If initial (historical) download needed, set trade_days to False'.format(request_date)
 
     return done

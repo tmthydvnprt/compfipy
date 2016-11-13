@@ -1,6 +1,7 @@
 """
 compfipy
-Computational Finance in Python
+
+Computational Finance in Python.
 """
 
 __all__ = ['asset', 'portfolio', 'market', 'models', 'calculator']

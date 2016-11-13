@@ -3,6 +3,9 @@ strategy.py
 
 Defines a class that contains a strategy definition and the functions to trade on that strategy.
 """
+
+# General Strategy Class
+# ------------------------------------------------------------------------------------------------------------------------------
 class Strategy(object):
     """
     Defines a particular trade strategy
@@ -19,9 +22,11 @@ class Strategy(object):
             pm_order=1.0,
             risk_free_return=1.0
         ):
-        """create base Strategy class"""
+        """
+        Create base Strategy object.
+        """
 
-        # assumptions
+        # Assumptions
         self.quiet = False
         self.commission_min = commission_min
         self.commission = commission
@@ -31,15 +36,15 @@ class Strategy(object):
         self.pm_order = pm_order
         self.risk_free_return = risk_free_return
 
-        # inputs
+        # Inputs
         self.portfolio = portfolio
         self.market = market
 
-        # trading states
+        # Trading states
         self.long_open = {symbol:False for symbol in portfolio.assets.keys()}
         self.short_open = {symbol:False for symbol in portfolio.assets.keys()}
 
-        # keep track of intermidiate results for performance
+        # Keep track of intermidiate results for performance
         self.display_data = []
         recordings = [
             'buy price', 'buy shares', 'buy fees', 'buy date',
@@ -56,15 +61,19 @@ class Strategy(object):
         self.drawdown = {symbol:[999999999999999, None] for symbol in portfolio.assets.keys()}
 
     def on_date(self, date, i):
-        """called for each date of portfolio data, implements trading logic"""
+        """
+        Called for each date of portfolio data, implements trading logic.
+        """
         pass
 
     def enter_long(self, symbol, date, shares):
-
+        """
+        Enter a long position.
+        """
         self.long_open[symbol] = True
         self.portfolio.trade(symbol, date, shares, self.commission_min, self.commission)
 
-        # set min, max & drawdown
+        # Set min, max & drawdown
         self.max[symbol] = [self.portfolio.assets[symbol].c[date], date]
         self.min[symbol] = [self.portfolio.assets[symbol].c[date], date]
         self.drawdown[symbol] = [self.portfolio.assets[symbol].c[date], date]
@@ -104,7 +113,9 @@ class Strategy(object):
         return self
 
     def exit_long(self, symbol, date, shares):
-
+        """
+        Exit a long position.
+        """
         self.long_open[symbol] = False
         self.portfolio.trade(symbol, date, -1.0 * shares, self.commission_min, self.commission)
 
@@ -166,31 +177,39 @@ class Strategy(object):
         return self
 
     def enter_short(self):
+        """
+        Enter a short position.
+        """
         self.short_open[symbol] = True
         pass
 
     def exit_short(self):
+        """
+        Exit a short position.
+        """
         self.short_open[symbol] = False
         pass
 
     def run(self):
-        """iterates over data"""
-
+        """
+        Iterates over data.
+        """
         self.before_run()
-
         for date in self.portfolio.cash.index:
             self.on_date(date)
-
         self.after_run()
 
     def before_run(self):
-        """called at the start of run"""
+        """
+        Called at the start of run.
+        """
         self.display_data = []
         return self
 
     def after_run(self):
-        """called at the end of run"""
-
+        """
+        Called at the end of run.
+        """
         if not self.quiet:
             print tabulate.tabulate(self.display_data, headers=['trade', 'symbol', 'date', 'price', 'shares', 'value', 'cash'])
             print
@@ -202,8 +221,9 @@ class Strategy(object):
             print tabulate.tabulate(perf, headers=assets, floatfmt=".2f")
 
     def calc_performance(self):
-        """calculate performance"""
-
+        """
+        Calculate performance of strategy.
+        """
         performance = {}
         for symbol in self.portfolio.assets.keys():
 
@@ -258,20 +278,21 @@ class Strategy(object):
 
         return performance
 
-################################################################################################################################
-
+# Specific Strategy Class
+# ------------------------------------------------------------------------------------------------------------------------------
 class SimpleMovingAverageCrossover(Strategy):
     """
-    buy when sma(50) crosses above sma(200), sell when sma(50) crosses below sma(200)
+    Buy when sma(50) crosses above sma(200), sell when sma(50) crosses below sma(200)
     """
-
     def __init__(self, portfolio, market, fast, slow):
         Strategy.__init__(self, portfolio, market)
         self.fast = fast
         self.slow = slow
 
     def on_date(self, date):
-        """iterates over dates"""
+        """
+        Iterates over dates.
+        """
 
         for symbol in self.portfolio.assets.keys():
 
@@ -279,7 +300,7 @@ class SimpleMovingAverageCrossover(Strategy):
 
                 price = self.portfolio.assets[symbol].c[date]
 
-                # record min, max & drawdown
+                # Record min, max & drawdown
                 if price > self.max[symbol][0]:
                     self.max[symbol] = [price, date]
                     # reset drawdown
@@ -291,11 +312,11 @@ class SimpleMovingAverageCrossover(Strategy):
                 if price < self.drawdown[symbol][0]:
                     self.drawdown[symbol] = [price, date]
 
-                # calculate moving averages
+                # Calculate moving averages
                 sma_fast = sma(self.portfolio.assets[symbol].c[:date], self.fast).iloc[-2:]
                 sma_slow = sma(self.portfolio.assets[symbol].c[:date], self.slow).iloc[-2:]
 
-                # determine crossover and direction
+                # Determine crossover and direction
                 xover = np.sign(np.sign(sma_fast - sma_slow).diff()).iloc[-1]
 
                 if xover > 0 and not self.long_open[symbol]:
@@ -313,11 +334,13 @@ class SimpleMovingAverageCrossover(Strategy):
 
 class BuyAndHold(Strategy):
     """
-    buy on the first day, never sell
+    Buy on the first day, never sell
     """
 
     def on_date(self, date):
-        """iterates over dates"""
+        """
+        Iterates over dates.
+        """
 
         for symbol in self.portfolio.assets.keys():
 
