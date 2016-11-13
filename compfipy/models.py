@@ -5,7 +5,7 @@ Various Stochastic models of the "market" that provide "fake" asset prices to te
 """
 
 import math
-import datetime as dt
+import datetime
 import pandas as pd
 import numpy as np
 
@@ -84,7 +84,7 @@ def generate_ochlv(prices=None, ochl_mu=0.0, ochl_sigma=0.1, v_mu=100000, v_sigm
     """
     Turn asset price into standard EOD data.
     """
-    date_rng = pd.date_range(dt.date.today() - dt.timedelta(days=len(prices)), periods=len(prices), freq='D')
+    date_rng = pd.date_range(datetime.date.today() - datetime.timedelta(days=len(prices)), periods=len(prices), freq='D')
     ochlv = pd.DataFrame({'Close':prices})
     ochlv['Open'] = prices + prices * np.random.normal(loc=ochl_mu, scale=ochl_sigma, size=prices.shape)
     ochlv['High'] = prices + prices * np.random.normal(loc=ochl_mu, scale=ochl_sigma, size=prices.shape)

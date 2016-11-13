@@ -5,13 +5,13 @@ asset.py
 Define the an asset class to contain price data and various calculations, measures, and processed versions of data.
 """
 
-import matplotlib.pyplot as plt
-import datetime as dt
-import pandas as pd
-import numpy as np
+import datetime
 import scipy.stats
 import collections
 import tabulate
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
 # Constants
 # ------------------------------------------------------------------------------------------------------------------------------
@@ -84,9 +84,9 @@ def fibonacci_arc(price=0.0, lastprice=0.0, days_since_last_price=0, n_days=0):
     fib_radius = FIBONACCI_DECIMAL * np.sqrt(np.power(lastprice - price, 2) + np.power(days_since_last_price, 2))
     return price - np.sqrt(np.power(fib_radius, 2) - np.power(n_days, 2))
 
-def fibonacci_time(date=dt.date.today()):
+def fibonacci_time(date=datetime.date.today()):
     """fibonacci_time"""
-    return [date + dt.timedelta(days=d) for d in FIBONACCI_SEQUENCE]
+    return [date + datetime.timedelta(days=d) for d in FIBONACCI_SEQUENCE]
 
 # General Utility Functions
 # ------------------------------------------------------------------------------------------------------------------------------
@@ -563,14 +563,14 @@ class Asset(object):
         """
         self.data.describe()
 
-    def time_range(self, start=None, end=dt.date.today(), freq='B'):
+    def time_range(self, start=None, end=datetime.date.today(), freq='B'):
         """
         Calculate a specific time range of data.
         """
-        if isinstance(start, dt.date) and isinstance(end, dt.date):
+        if isinstance(start, datetime.date) and isinstance(end, datetime.date):
             date_range = pd.date_range(start, end, freq=freq)
         else:
-            date_range = pd.date_range(end - dt.timedelta(days=start), periods=start, freq=freq)
+            date_range = pd.date_range(end - datetime.timedelta(days=start), periods=start, freq=freq)
         return Asset(self.symbol, self.data.loc[date_range])
 
     # Bring underlying data to class properties

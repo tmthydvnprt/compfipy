@@ -24,12 +24,11 @@ Define a specifc group of Assets along with functions that pertain to the portfo
 """
 
 import copy
-import datetime as dt
-import pandas as pd
-import numpy as np
 import scipy.stats
 import collections
 import tabulate
+import pandas as pd
+import numpy as np
 
 # General Portfolio Class
 # ------------------------------------------------------------------------------------------------------------------------------
