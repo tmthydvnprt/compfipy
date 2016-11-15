@@ -355,6 +355,12 @@ def update_history(
     download_offset = 1
     # EOD data is not released until the following day so always request yesterday's data, unless a force_day is input
     request_date = force_day if force_day else today - datetime.timedelta(days=1)
+    log_message(
+        'Begin download for {:%Y-%m-%d}.\n'.format(request_date)
+        log_location,
+        log,
+        display
+    )
 
     # Only procede with downloads if the market was open or non-trade day override
     if is_open_on(request_date) or not trade_days:
@@ -580,7 +586,11 @@ def update_history(
                 f.write(tabulate.tabulate(history_status.items()).replace(' ', '.'))
     else:
         done = True
-        print 'Market was not open on {:%Y-%m-%d}. No EOD data available.'.format(request_date)
-        print 'If initial (historical) download needed, set trade_days to False'
+        log_message(
+            'Market was not open on {:%Y-%m-%d}. No EOD data available.\nIf initial (historical) download needed, set trade_days to False.\n'.format(request_date)
+            log_location,
+            log,
+            display
+        )
 
     return done
