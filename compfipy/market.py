@@ -564,8 +564,12 @@ def update_history(
         history_status['number_of_symbols'] = len(symbol_manifest)
         history_status['downloaded'] = symbol_manifest['Start'].count()
         history_status['download_attempt'] = symbol_manifest['End'].count()
-        history_status['percent_complete'] = np.round(100.0 * symbol_manifest['Start'].count() / float(len(symbol_manifest)),2)
-        history_status['percent_attempt'] = np.round(100.0 * symbol_manifest['End'].count() / float(len(symbol_manifest)), 2)
+        try:
+            history_status['percent_complete'] = np.round(100.0 * symbol_manifest['Start'].count() / float(len(symbol_manifest)),2)
+            history_status['percent_attempt'] = np.round(100.0 * symbol_manifest['End'].count() / float(len(symbol_manifest)), 2)
+        except ZeroDivisionError:
+            history_status['percent_complete'] = np.NaN
+            history_status['percent_attempt'] = np.NaN
 
         for location in history_status_location:
             with open(location, 'w') as f:
