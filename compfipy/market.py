@@ -400,7 +400,7 @@ def update_history(
         # New History Generation
         else:
             history_status = {
-                'count': 0,                                  # Number of symbols downloaded
+                'count': 0,                                  # Number of time update_history has been called
                 'complete': False,                           # Download complete for the day?
                 'last': datetime.datetime.now().isoformat(), # Current last update time
                 'day': str(request_date),                    # Date that is being downloaded
