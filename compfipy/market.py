@@ -407,7 +407,7 @@ def update_history(
                 'mode': 'build',                             # Building or updating
                 'manifest': False,                           # Manifest available
                 'symbol': None,                              # Current symbol
-                'date': None,                                # Current date 
+                'date': None,                                # Current date
                 'number_of_symbols': 0,                      # Number of symbols
                 'downloaded': 0,                             # Number of symbols downloaded
                 'download_attempt': 0,                       # Number of symbols attempted to download
@@ -416,14 +416,15 @@ def update_history(
             }
             log_message('History Status does not exists. Creating Status.\n', log_location, log, display)
 
-        # If symbol manifest exist enter update mode
+        # If symbol manifest exist enter build or update mode
         if os.path.exists(symbol_manifest_location[0]):
             # Read from disk
             symbol_manifest = pd.read_csv(symbol_manifest_location[0], index_col=0, parse_dates=[6, 7])
 
-            # If past symbol history is not complete, incrementally download history backwards
+            # Build Mode: If past symbol history is not complete, incrementally download history backwardsm
             incomplete_history = symbol_manifest[~symbol_manifest['Current']]
             if len(incomplete_history) > 0:
+                history_status['mode'] = 'build'
                 # Get first incomplete symbol
                 symbol = incomplete_history.index.tolist()[0]
 
@@ -489,8 +490,10 @@ def update_history(
                     symbol_manifest.to_csv(location)
                 log_message(' {}\n'.format('[ ]' if data.empty else '[x]'), log_location, log, display)
 
+            # Update Mode: If current symbol history is not complete, incrementally download history forwards
             else:
-                # If current symbol history is not complete, incrementally download history forwards
+                history_status['mode'] = 'update'
+
                 incomplete_symbols = symbol_manifest.loc[
                     (symbol_manifest['End'] != request_date) & ~pd.isnull(symbol_manifest['Start'])
                 ]
@@ -570,7 +573,7 @@ def update_history(
         history_status['downloaded'] = symbol_manifest['Start'].count()
         history_status['download_attempt'] = symbol_manifest['End'].count()
         try:
-            history_status['percent_complete'] = np.round(100.0 * symbol_manifest['Start'].count() / float(len(symbol_manifest)),2)
+            history_status['percent_complete'] = np.round(100.0 * symbol_manifest['Start'].count() / float(len(symbol_manifest)), 2)
             history_status['percent_attempt'] = np.round(100.0 * symbol_manifest['End'].count() / float(len(symbol_manifest)), 2)
         except ZeroDivisionError:
             history_status['percent_complete'] = np.NaN
