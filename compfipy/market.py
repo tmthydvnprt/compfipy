@@ -569,6 +569,7 @@ def update_history(
         history_status['request_date'] = str(request_date)
         history_status['count'] += 1
 
+        # Build Mode Numbers: Update Overall History Counts/Percents
         history_status['number_of_symbols'] = len(symbol_manifest)
         history_status['build_downloaded'] = symbol_manifest['Start'].count()
         history_status['build_download_attempt'] = symbol_manifest['End'].count()
