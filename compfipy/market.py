@@ -400,19 +400,19 @@ def update_history(
         # New History Generation
         else:
             history_status = {
-                'count': 0,
-                'complete': False,
-                'last': datetime.datetime.now().isoformat(),
-                'day': str(request_date),
-                'mode': 'build',
-                'manifest': False,
-                'symbol': None,
-                'date': None,
-                'number_of_symbols': 0,
-                'downloaded': 0,
-                'download_attempt': 0,
-                'percent_complete': 0.0,
-                'percent_attempt': 0.0
+                'count': 0,                                  # Number of symbols downloaded
+                'complete': False,                           # Download complete for the day?
+                'last': datetime.datetime.now().isoformat(), # Current last update time
+                'day': str(request_date),                    # Date that is being downloaded
+                'mode': 'build',                             # Building or updating
+                'manifest': False,                           # Manifest available
+                'symbol': None,                              # Current symbol
+                'date': None,                                # Current date 
+                'number_of_symbols': 0,                      # Number of symbols
+                'downloaded': 0,                             # Number of symbols downloaded
+                'download_attempt': 0,                       # Number of symbols attempted to download
+                'percent_complete': 0.0,                     # Percent of symbols completed
+                'percent_attempt': 0.0                       # Percent of symbols attempted
             }
             log_message('History Status does not exists. Creating Status.\n', log_location, log, display)
 
@@ -492,8 +492,7 @@ def update_history(
             else:
                 # If current symbol history is not complete, incrementally download history forwards
                 incomplete_symbols = symbol_manifest.loc[
-                    (symbol_manifest['End'] != request_date) &
-                    ~pd.isnull(symbol_manifest['Start'])
+                    (symbol_manifest['End'] != request_date) & ~pd.isnull(symbol_manifest['Start'])
                 ]
                 if len(incomplete_symbols) > 0:
                     # Get first incomplete symbol
