@@ -579,10 +579,12 @@ def update_history(
             history_status['percent_complete'] = np.NaN
             history_status['percent_attempt'] = np.NaN
 
+        # Write the history status as json
         for location in history_status_location:
             with open(location, 'w') as f:
                 json.dump(history_status, f, indent=4, separators=(',',': '))
 
+        # Write the history status as text
         for location in [h.replace('.json', '.txt') for h in history_status_location]:
             with open(location, 'w') as f:
                 f.write(tabulate.tabulate(history_status.items()).replace(' ', '.'))
