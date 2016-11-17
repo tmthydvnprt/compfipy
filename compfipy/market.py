@@ -580,6 +580,17 @@ def update_history(
             history_status['build_percent_complete'] = np.NaN
             history_status['build_percent_attempt'] = np.NaN
 
+        # Update Mode Numbers: Update Current History Counts/Percents
+        current_max_date = symbol_manifest['End'].max()
+        history_status['update_downloaded'] = (symbol_manifest['End'] == current_max_date).count()
+        history_status['update_download_attempt'] = (symbol_manifest['End'] < current_max_date).count()
+        try:
+            history_status['update_percent_complete'] = np.round(100.0 * history_status['update_downloaded'] / float(len(symbol_manifest)), 2)
+            history_status['update_percent_attempt'] = np.round(100.0 * history_status['update_download_attempt'] / float(len(symbol_manifest)), 2)
+        except ZeroDivisionError:
+            history_status['update_percent_complete'] = np.NaN
+            history_status['update_percent_attempt'] = np.NaN
+
         # Write the history status as json
         for location in history_status_location:
             with open(location, 'w') as f:
