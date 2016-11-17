@@ -99,13 +99,13 @@ def nyse_holidays(year=datetime.date.today().year):
     else:
         typical_holidays = [
             datetime.date(year, 1, 1),                                 # New Year's Day
-            nth_week_day_of_month(3, 'Mon', 1, year),            # Martin Luther King, Jr. Day
-            nth_week_day_of_month(3, 'Mon', 2, year),            # Washington's Birthday (President's Day)
+            nth_week_day_of_month(3, 'Mon', 1, year),                  # Martin Luther King, Jr. Day
+            nth_week_day_of_month(3, 'Mon', 2, year),                  # Washington's Birthday (President's Day)
             dateutil.easter.easter(year) - datetime.timedelta(days=2), # Good Friday
-            nth_week_day_of_month(-1, 'Mon', 5, year),           # Memorial Day
+            nth_week_day_of_month(-1, 'Mon', 5, year),                 # Memorial Day
             datetime.date(year, 7, 4),                                 # Independence Day
-            nth_week_day_of_month(1, 'Mon', 9, year),            # Labor Day
-            nth_week_day_of_month(4, 'Thu', 11, year),           # Thanksgiving Day
+            nth_week_day_of_month(1, 'Mon', 9, year),                  # Labor Day
+            nth_week_day_of_month(4, 'Thu', 11, year),                 # Thanksgiving Day
             datetime.date(year, 12, 25)                                # Christmas Day
         ]
         historical_holidays = [
@@ -126,9 +126,9 @@ def nyse_close_early_dates(year=datetime.date.today().year):
     Get dates that the NYSE closes early.
     """
     return [
-        datetime.date(year, 6, 3),                       # 1:00pm day before Independence Day
+        datetime.date(year, 6, 3),                 # 1:00pm day before Independence Day
         nth_week_day_of_month(4, 'Wed', 11, year), # 1:00pm day before Thanksgiving Day
-        datetime.date(year, 12, 24)                      # 1:00pm day before Christmas Day
+        datetime.date(year, 12, 24)                # 1:00pm day before Christmas Day
     ]
 
 def closing_time(date=datetime.date.today()):
@@ -159,7 +159,7 @@ def is_open_at(datetime=datetime.datetime.today()):
     """
     Return boolean if the NYSE is open at a specific time (includes normal trading hours, close early days and holidays).
     """
-    #if weekend or holiday
+    # If weekend or holiday
     if not is_open_on(datetime):
         return False
     else:
