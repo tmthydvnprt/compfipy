@@ -507,7 +507,7 @@ def update_history(
                     # Clip end to request_date if end is in the future
                     end = request_date if end > request_date else end
                     log_message(
-                        '{:%Y-%m-%d %H:%M:%S}: Downloading {} from {} to {}:'.format(now, symbol, start, end),
+                        '{:%Y-%m-%d %H:%M:%S}: Downloading {} from {:%Y-%m-%d} to {:%Y-%m-%d}:'.format(now, symbol, start, end),
                         log_location,
                         log,
                         display
