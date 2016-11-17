@@ -533,7 +533,7 @@ def update_history(
                             pickle.dump(history, f, protocol=0)
 
                         # Record last ending in manifest (use last non-NaN price date)
-                        symbol_manifest.loc[symbol, 'End'] = str(history.last_valid_index().date())
+                        symbol_manifest.loc[symbol, 'End'] = history.last_valid_index().date()
 
                     # Record in status
                     history_status['current_symbol'] = symbol
