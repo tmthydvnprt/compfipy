@@ -390,12 +390,12 @@ def update_history(
         if os.path.exists(history_status_location[0]):
             with open(history_status_location[0], 'r') as f:
                 history_status = json.load(f)
-                history_status['day'] = datetime.datetime.strptime(history_status['day'], '%Y-%m-%d').date()
+                history_status['request_date'] = datetime.datetime.strptime(history_status['request_date'], '%Y-%m-%d').date()
                 try:
                     history_status['last'] = datetime.datetime.strptime(history_status['last'], '%Y-%m-%dT%H:%M:%S.%f')
                 except ValueError:
                     history_status['last'] = datetime.datetime.strptime(history_status['last'], '%Y-%m-%dT%H:%M:%S')
-                history_status['complete'] = False if history_status['day'] < request_date else True
+                history_status['complete'] = False if history_status['request_date'] < request_date else True
 
         # New History Generation
         else:
@@ -406,13 +406,13 @@ def update_history(
                 'day': str(request_date),                    # Date that is being downloaded
                 'mode': 'build',                             # Building or updating
                 'manifest': False,                           # Manifest available
-                'symbol': None,                              # Current symbol
-                'date': None,                                # Current date
+                'current_symbol': None,                      # Current symbol
+                'current_date': None,                        # Current date
                 'number_of_symbols': 0,                      # Number of symbols
-                'downloaded': 0,                             # Number of symbols downloaded
-                'download_attempt': 0,                       # Number of symbols attempted to download
-                'percent_complete': 0.0,                     # Percent of symbols completed
-                'percent_attempt': 0.0                       # Percent of symbols attempted
+                'build_downloaded': 0,                       # Number of symbols downloaded during build
+                'build_download_attempt': 0,                 # Number of symbols attempted to download during build
+                'build_percent_complete': 0.0,               # Percent of symbols completed during build
+                'build_percent_attempt': 0.0                 # Percent of symbols attempted during build
             }
             log_message('History Status does not exists. Creating Status.\n', log_location, log, display)
 
@@ -482,8 +482,8 @@ def update_history(
                     symbol_manifest.loc[symbol, 'Start'] = data.index[0].date()
 
                 # Record in status
-                history_status['symbol'] = symbol
-                history_status['date'] = str(start)
+                history_status['current_symbol'] = symbol
+                history_status['current_date'] = str(start)
 
                 # Store manifest to disk
                 for location in symbol_manifest_location:
@@ -536,8 +536,8 @@ def update_history(
                     symbol_manifest.loc[symbol, 'End'] = str(history.last_valid_index().date())
 
                     # Record in status
-                    history_status['symbol'] = symbol
-                    history_status['date'] = str(start)
+                    history_status['current_symbol'] = symbol
+                    history_status['current_date'] = str(start)
 
                     # Store manifest to disk
                     for location in symbol_manifest_location:
@@ -566,18 +566,18 @@ def update_history(
 
         # Store status to disk at the end of the script
         history_status['last'] = datetime.datetime.now().isoformat()
-        history_status['day'] = str(request_date)
+        history_status['request_date'] = str(request_date)
         history_status['count'] += 1
 
         history_status['number_of_symbols'] = len(symbol_manifest)
-        history_status['downloaded'] = symbol_manifest['Start'].count()
-        history_status['download_attempt'] = symbol_manifest['End'].count()
+        history_status['build_downloaded'] = symbol_manifest['Start'].count()
+        history_status['build_download_attempt'] = symbol_manifest['End'].count()
         try:
-            history_status['percent_complete'] = np.round(100.0 * symbol_manifest['Start'].count() / float(len(symbol_manifest)), 2)
-            history_status['percent_attempt'] = np.round(100.0 * symbol_manifest['End'].count() / float(len(symbol_manifest)), 2)
+            history_status['build_percent_complete'] = np.round(100.0 * symbol_manifest['Start'].count() / float(len(symbol_manifest)), 2)
+            history_status['build_percent_attempt'] = np.round(100.0 * symbol_manifest['End'].count() / float(len(symbol_manifest)), 2)
         except ZeroDivisionError:
-            history_status['percent_complete'] = np.NaN
-            history_status['percent_attempt'] = np.NaN
+            history_status['build_percent_complete'] = np.NaN
+            history_status['build_percent_attempt'] = np.NaN
 
         # Write the history status as json
         for location in history_status_location:
