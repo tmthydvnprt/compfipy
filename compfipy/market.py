@@ -532,8 +532,8 @@ def update_history(
                         with open(history_path.format(symbol + '.pkl'), 'w') as f:
                             pickle.dump(history, f, protocol=0)
 
-                    # Record last ending in manifest
-                    symbol_manifest.loc[symbol, 'End'] = end
+                    # Record last ending in manifest (use last non-NaN price date)
+                    symbol_manifest.loc[symbol, 'End'] = str(history.last_valid_index().date())
 
                     # Record in status
                     history_status['symbol'] = symbol
