@@ -574,8 +574,8 @@ def update_history(
         history_status['build_downloaded'] = symbol_manifest['Start'].count()
         history_status['build_download_attempt'] = symbol_manifest['End'].count()
         try:
-            history_status['build_percent_complete'] = np.round(100.0 * symbol_manifest['Start'].count() / float(len(symbol_manifest)), 2)
-            history_status['build_percent_attempt'] = np.round(100.0 * symbol_manifest['End'].count() / float(len(symbol_manifest)), 2)
+            history_status['build_percent_complete'] = np.round(100.0 * history_status['build_downloaded'] / float(len(symbol_manifest)), 2)
+            history_status['build_percent_attempt'] = np.round(100.0 * history_status['build_download_attempt'] / float(len(symbol_manifest)), 2)
         except ZeroDivisionError:
             history_status['build_percent_complete'] = np.NaN
             history_status['build_percent_attempt'] = np.NaN
