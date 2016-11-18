@@ -204,6 +204,9 @@ def download_all_symbols():
     symbols = symbols[COLUMN_ORDER]
     symbols = symbols.set_index('Symbol')
 
+    # Drop unnecesary Columns
+    symbols = symbols.drop(['NASDAQ Symbol', 'Test Issue'], 1)
+
     # Drop Nasdaq test stock symbols (experimentally found)
     symbols = symbols.drop(['ZJZZT', 'ZVZZC', 'ZVZZT', 'ZWZZT', 'ZXZZT', 'ZXYZ.A'])
 
@@ -494,8 +497,11 @@ def update_history(
             else:
                 history_status['mode'] = 'update'
 
+                # Are there any incomplete symbols?
+                # Use the last download attempt date, not the actual last data date.
+                # This prevents infinite loops on days that don't download successfully.
                 incomplete_symbols = symbol_manifest.loc[
-                    (symbol_manifest['End'] != request_date) & ~pd.isnull(symbol_manifest['Start'])
+                    (symbol_manifest['Attempt'] != request_date) & ~pd.isnull(symbol_manifest['Start'])
                 ]
                 if len(incomplete_symbols) > 0:
                     # Get first incomplete symbol
@@ -535,6 +541,9 @@ def update_history(
                         # Record last ending in manifest (use last non-NaN price date)
                         symbol_manifest.loc[symbol, 'End'] = history.last_valid_index().date()
 
+                    # Record the request data in the manifest
+                    symbol_manifest.loc[symbol, 'Attempt'] = request_date
+
                     # Record in status
                     history_status['current_symbol'] = symbol
                     history_status['current_date'] = str(start)
@@ -557,6 +566,7 @@ def update_history(
             # Initialize data to track of
             symbol_manifest['Start'] = None
             symbol_manifest['End'] = None
+            symbols['Attempt'] = None
             symbol_manifest['Current'] = False
             # Store to disk
             for location in symbol_manifest_location:
