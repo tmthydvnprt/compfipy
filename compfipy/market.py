@@ -576,22 +576,23 @@ def update_history(
         history_status['count'] += 1
 
         # Build Mode Numbers: Update Overall History Counts/Percents
-        history_status['number_of_symbols'] = len(symbol_manifest)
+        total_symbols = float(len(symbol_manifest))
+        history_status['number_of_symbols'] = total_symbols
         history_status['build_downloaded'] = symbol_manifest['Start'].count()
         history_status['build_download_attempt'] = symbol_manifest['End'].count()
         try:
-            history_status['build_percent_complete'] = np.round(100.0 * history_status['build_downloaded'] / float(len(symbol_manifest)), 2)
-            history_status['build_percent_attempt'] = np.round(100.0 * history_status['build_download_attempt'] / float(len(symbol_manifest)), 2)
+            history_status['build_percent_complete'] = np.round(100.0 * history_status['build_downloaded'] / total_symbols, 2)
+            history_status['build_percent_attempt'] = np.round(100.0 * history_status['build_download_attempt'] / total_symbols, 2)
         except ZeroDivisionError:
             history_status['build_percent_complete'] = np.NaN
             history_status['build_percent_attempt'] = np.NaN
 
         # Update Mode Numbers: Update Current History Counts/Percents
-        history_status['update_downloaded'] = (symbol_manifest['End'] == request_date).sum()
-        history_status['update_download_attempt'] = (symbol_manifest['Attempt'] == request_date).sum()
+        history_status['update_downloaded'] = float((symbol_manifest['End'] == request_date).sum())
+        history_status['update_download_attempt'] = float((symbol_manifest['Attempt'] == request_date).sum())
         try:
-            history_status['update_percent_complete'] = np.round(100.0 * history_status['update_downloaded'] / float(len(symbol_manifest)), 2)
-            history_status['update_percent_attempt'] = np.round(100.0 * history_status['update_download_attempt'] / float(len(symbol_manifest)), 2)
+            history_status['update_percent_complete'] = np.round(100.0 * history_status['update_downloaded'] / total_symbols, 2)
+            history_status['update_percent_attempt'] = np.round(100.0 * history_status['update_download_attempt'] / total_symbols, 2)
         except ZeroDivisionError:
             history_status['update_percent_complete'] = np.NaN
             history_status['update_percent_attempt'] = np.NaN
