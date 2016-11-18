@@ -427,7 +427,10 @@ def update_history(
             # Build Mode: If past symbol history is not complete, incrementally download history backwardsm
             incomplete_history = symbol_manifest[~symbol_manifest['Current']]
             if len(incomplete_history) > 0:
+
                 history_status['mode'] = 'build'
+                log_message('Entering Build Mode.\n', log_location, log, display)
+
                 # Get first incomplete symbol
                 symbol = incomplete_history.index.tolist()[0]
 
@@ -496,6 +499,7 @@ def update_history(
             # Update Mode: If current symbol history is not complete, incrementally download history forwards
             else:
                 history_status['mode'] = 'update'
+                log_message('Entering Update Mode.\n', log_location, log, display)
 
                 # Are there any incomplete symbols?
                 # Use the last download attempt date, not the actual last data date.
