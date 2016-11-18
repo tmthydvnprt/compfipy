@@ -422,7 +422,7 @@ def update_history(
         # If symbol manifest exist enter build or update mode
         if os.path.exists(symbol_manifest_location[0]):
             # Read from disk
-            symbol_manifest = pd.read_csv(symbol_manifest_location[0], index_col=0, parse_dates=[6, 7])
+            symbol_manifest = pd.read_csv(symbol_manifest_location[0], index_col=0, parse_dates=[3, 4, 5])
 
             # Build Mode: If past symbol history is not complete, incrementally download history backwardsm
             incomplete_history = symbol_manifest[~symbol_manifest['Current']]
