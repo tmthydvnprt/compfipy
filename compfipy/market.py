@@ -422,14 +422,13 @@ def update_history(
         # If symbol manifest exist enter build or update mode
         if os.path.exists(symbol_manifest_location[0]):
             # Read from disk
-            symbol_manifest = pd.read_csv(symbol_manifest_location[0], index_col=0, parse_dates=[3, 4, 5])
+            symbol_manifest = pd.read_csv(symbol_manifest_location[0], index_col=0, parse_dates=[4, 5, 6])
 
             # Build Mode: If past symbol history is not complete, incrementally download history backwardsm
             incomplete_history = symbol_manifest[~symbol_manifest['Current']]
             if len(incomplete_history) > 0:
 
                 history_status['mode'] = 'build'
-                log_message('Entering Build Mode.\n', log_location, log, display)
 
                 # Get first incomplete symbol
                 symbol = incomplete_history.index.tolist()[0]
@@ -447,7 +446,7 @@ def update_history(
                     # Clip end to earliest_date if start is before it
                     start = earliest_date if start < earliest_date else start
                 log_message(
-                    '{:%Y-%m-%d %H:%M:%S}: Downloading {} from {} to {}:'.format(now, symbol, start, end),
+                    '{:%Y-%m-%d %H:%M:%S}: (Build Mode) Downloading {} from {} to {}:'.format(now, symbol, start, end),
                     log_location,
                     log,
                     display
@@ -499,7 +498,6 @@ def update_history(
             # Update Mode: If current symbol history is not complete, incrementally download history forwards
             else:
                 history_status['mode'] = 'update'
-                log_message('Entering Update Mode.\n', log_location, log, display)
 
                 # Are there any incomplete symbols?
                 # Use the last download attempt date, not the actual last data date.
@@ -517,7 +515,7 @@ def update_history(
                     # Clip end to request_date if end is in the future
                     end = request_date if end > request_date else end
                     log_message(
-                        '{:%Y-%m-%d %H:%M:%S}: Downloading {} from {:%Y-%m-%d} to {:%Y-%m-%d}:'.format(now, symbol, start, end),
+                        '{:%Y-%m-%d %H:%M:%S}: (Update Mode) Downloading {} from {:%Y-%m-%d} to {:%Y-%m-%d}:'.format(now, symbol, start, end),
                         log_location,
                         log,
                         display
