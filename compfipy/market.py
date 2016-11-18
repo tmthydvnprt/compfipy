@@ -587,8 +587,8 @@ def update_history(
             history_status['build_percent_attempt'] = np.NaN
 
         # Update Mode Numbers: Update Current History Counts/Percents
-        history_status['update_downloaded'] = (symbol_manifest['End'] == request_date).count()
-        history_status['update_download_attempt'] = (symbol_manifest['Attempt'] == request_date).count()
+        history_status['update_downloaded'] = (symbol_manifest['End'] == request_date).sum()
+        history_status['update_download_attempt'] = (symbol_manifest['Attempt'] == request_date).sum()
         try:
             history_status['update_percent_complete'] = np.round(100.0 * history_status['update_downloaded'] / float(len(symbol_manifest)), 2)
             history_status['update_percent_attempt'] = np.round(100.0 * history_status['update_download_attempt'] / float(len(symbol_manifest)), 2)
