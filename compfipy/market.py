@@ -367,7 +367,7 @@ def update_history(
             if not os.path.exists(os.path.dirname(location)):
                 os.makedirs(os.path.dirname(location))
                 log_message(
-                    'Data directory does not exists. Creating Directory.\n{}'.format(os.path.dirname(location)),
+                    'Data directory does not exists. Creating Directory.\n{}\n'.format(os.path.dirname(location)),
                     log_location,
                     log,
                     display
@@ -377,7 +377,7 @@ def update_history(
         if not os.path.exists(os.path.dirname(history_path)):
             os.makedirs(os.path.dirname(history_path))
             log_message(
-                'History directory does not exists. Creating Directory.\n{}'.format(os.path.dirname(history_path)),
+                'History directory does not exists. Creating Directory.\n{}\n'.format(os.path.dirname(history_path)),
                 log_location,
                 log,
                 display
