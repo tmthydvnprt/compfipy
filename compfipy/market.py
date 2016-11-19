@@ -281,8 +281,11 @@ def log_message(msg, log_location, log=True, display=True):
     # Log to file
     if log:
         for location in log_location:
-            with open(location, 'a') as f:
-                f.write(msg)
+            try:
+                with open(location, 'a') as f:
+                    f.write(msg)
+            except IOError:
+                pass
 
 def update_history(
     symbol_manifest_location='./data/symbols.csv',
