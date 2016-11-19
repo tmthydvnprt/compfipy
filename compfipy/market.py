@@ -565,7 +565,7 @@ def update_history(
             # Initialize data to track of
             symbol_manifest['Start'] = None
             symbol_manifest['End'] = None
-            symbols['Attempt'] = None
+            symbol_manifest['Attempt'] = None
             symbol_manifest['Current'] = False
             # Store to disk
             for location in symbol_manifest_location:
