@@ -1,1 +1,117 @@
 compfipy
+************* Module compfipy.strategy
+I: 13, 0: Locally disabling too-many-instance-attributes (R0902) (locally-disabled)
+I: 13, 0: Locally disabling too-many-arguments (R0913) (locally-disabled)
+************* Module compfipy.market
+I:287, 0: Locally disabling too-many-arguments (R0913) (locally-disabled)
+I:287, 0: Locally disabling too-many-branches (R0912) (locally-disabled)
+I:287, 0: Locally disabling too-many-statements (R0915) (locally-disabled)
+************* Module compfipy.asset
+I:  1, 0: Locally disabling too-many-public-methods (R0904) (locally-disabled)
+I:111, 0: Locally disabling line-too-long (C0301) (locally-disabled)
+I:221, 0: Locally enabling line-too-long (C0301) (locally-enabled)
+I:243, 0: Locally disabling too-many-statements (R0915) (locally-disabled)
+I:401, 0: Locally enabling too-many-statements (R0915) (locally-enabled)
+
+
+Report
+======
+1364 statements analysed.
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |8      |8          |=          |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |5      |5          |=          |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |147    |147        |=          |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |50     |50         |=          |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+External dependencies
+---------------------
+::
+
+    dateutil 
+      \-easter (compfipy.market)
+    matplotlib 
+      \-pyplot (compfipy.asset)
+    numpy (compfipy.asset)
+    pandas (compfipy.asset)
+    scipy 
+      \-stats (compfipy.asset)
+    tabulate (compfipy.asset)
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |1552   |49.70 |1552     |=          |
++----------+-------+------+---------+-----------+
+|docstring |1023   |32.76 |1023     |=          |
++----------+-------+------+---------+-----------+
+|comment   |194    |6.21  |194      |=          |
++----------+-------+------+---------+-----------+
+|empty     |354    |11.34 |354      |=          |
++----------+-------+------+---------+-----------+
+
+
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |0        |=          |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |0.000    |=          |
++-------------------------+------+---------+-----------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |0      |0        |=          |
++-----------+-------+---------+-----------+
+|refactor   |0      |0        |=          |
++-----------+-------+---------+-----------+
+|warning    |0      |0        |=          |
++-----------+-------+---------+-----------+
+|error      |0      |0        |=          |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------------+------------+
+|message id       |occurrences |
++=================+============+
+|locally-disabled |8           |
++-----------------+------------+
+|locally-enabled  |2           |
++-----------------+------------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 10.00/10 (previous run: 10.00/10, +0.00)
+

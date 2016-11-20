@@ -2,6 +2,8 @@
 models.py
 
 Various Stochastic models of the "market" that provide "fake" asset prices to test on.
+
+
 """
 
 import math
@@ -70,13 +72,6 @@ def merton_jump_diffusion(time=500, delta_t=(1.0 / 252.0), sigma=2, gbm_mu=0.5, 
     jd = jump_diffusion(time, delta_t, jd_mu, jd_sigma, jd_lambda)
     gbm = geometric_brownian_motion(time, delta_t, sigma, gbm_mu)
     return gbm + jd
-
-def heston_volatility(time=500, delta_t=(1.0 / 252.0), sigma=2, gbm_mu=0.5, jd_mu=0.0, jd_sigma=0.3, jd_lambda=0.1):
-    """
-    Return asset price whose returnes evolve according to geometric brownian motion with jump diffusion and non constant
-    volatility.
-    """
-    pass
 
 # Create standard EOD data from price data
 # ------------------------------------------------------------------------------------------------------------------------------

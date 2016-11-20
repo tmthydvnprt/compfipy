@@ -4,14 +4,20 @@ strategy.py
 Defines a class that contains a strategy definition and the functions to trade on that strategy.
 """
 
+import tabulate
+import numpy as np
+import pandas as pd
+
 # General Strategy Class
 # ------------------------------------------------------------------------------------------------------------------------------
+# pylint: disable=too-many-instance-attributes,too-many-arguments
 class Strategy(object):
     """
     Defines a particular trade strategy
     """
 
-    def __init__(self,
+    def __init__(
+            self,
             portfolio,
             market,
             commission_min=1.00,
@@ -60,7 +66,7 @@ class Strategy(object):
         self.min = {symbol:[999999999999999, None] for symbol in portfolio.assets.keys()}
         self.drawdown = {symbol:[999999999999999, None] for symbol in portfolio.assets.keys()}
 
-    def on_date(self, date, i):
+    def on_date(self, date):
         """
         Called for each date of portfolio data, implements trading logic.
         """
@@ -123,7 +129,7 @@ class Strategy(object):
 
         self.record[symbol].loc[i, 'sell price'] = self.portfolio.assets[symbol].c[date]
         self.record[symbol].loc[i, 'sell shares'] = shares
-        self.record[symbol].loc[i, 'sell fees'] =  max(self.commission_min, abs(self.commission * shares))
+        self.record[symbol].loc[i, 'sell fees'] = max(self.commission_min, abs(self.commission * shares))
         self.record[symbol].loc[i, 'sell date'] = date
 
         initial = self.record[symbol].loc[i, 'buy price'] * self.record[symbol].loc[i, 'buy shares']
@@ -160,8 +166,8 @@ class Strategy(object):
         returns = trade_prices.pct_change()
         market_returns = market_prices.pct_change()
 
-        M = pd.DataFrame({'asset': returns, 'market': market_returns})
-        beta = M.cov()['asset']['market'] / market_returns.std()
+        asset_and_market = pd.DataFrame({'asset': returns, 'market': market_returns})
+        beta = asset_and_market.cov()['asset']['market'] / market_returns.std()
 
         self.record[symbol].loc[i, 'volatility'] = returns.std()
         self.record[symbol].loc[i, 'expected_return'] = returns.mean()
@@ -176,19 +182,17 @@ class Strategy(object):
 
         return self
 
-    def enter_short(self):
+    def enter_short(self, symbol): #, date, shares
         """
         Enter a short position.
         """
         self.short_open[symbol] = True
-        pass
 
-    def exit_short(self):
+    def exit_short(self, symbol): #, date, shares
         """
         Exit a short position.
         """
         self.short_open[symbol] = False
-        pass
 
     def run(self):
         """
@@ -232,15 +236,15 @@ class Strategy(object):
             loss = self.record[symbol]['loss'].sum()
             try:
                 wins = len(self.record[symbol].groupby('win/loose').groups['w'])
-            except:
+            except ValueError:
                 wins = 0
             try:
                 losses = len(self.record[symbol].groupby('win/loose').groups['l'])
-            except:
+            except ValueError:
                 losses = 0
             try:
                 washes = len(self.record[symbol].groupby('win/loose').groups['-'])
-            except:
+            except ValueError:
                 washes = 0
             max_drawdown = self.record[symbol]['drawdown'].max()
             average_drawdown = self.record[symbol]['drawdown'].mean()
@@ -313,8 +317,8 @@ class SimpleMovingAverageCrossover(Strategy):
                     self.drawdown[symbol] = [price, date]
 
                 # Calculate moving averages
-                sma_fast = sma(self.portfolio.assets[symbol].c[:date], self.fast).iloc[-2:]
-                sma_slow = sma(self.portfolio.assets[symbol].c[:date], self.slow).iloc[-2:]
+                sma_fast = np.ma.average(self.portfolio.assets[symbol].c[:date], self.fast).iloc[-2:]
+                sma_slow = np.ma.average(self.portfolio.assets[symbol].c[:date], self.slow).iloc[-2:]
 
                 # Determine crossover and direction
                 xover = np.sign(np.sign(sma_fast - sma_slow).diff()).iloc[-1]

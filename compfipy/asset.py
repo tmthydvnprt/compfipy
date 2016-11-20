@@ -6,9 +6,9 @@ Define the an asset class to contain price data and various calculations, measur
 """
 
 import datetime
-import scipy.stats
 import collections
 import tabulate
+import scipy.stats
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -772,9 +772,9 @@ class Asset(object):
 
         # Find start and end time
         start = ~is_zero & is_zero.shift(1)
-        start = list(start[start == True].index)
+        start = list(start[start is True].index)
         end = is_zero & (~is_zero).shift(1)
-        end = list(end[end == True].index)
+        end = list(end[end is True].index)
 
         # Handle no ending
         if len(end) is 0:
@@ -950,7 +950,7 @@ class Asset(object):
         nday_closing_high = pd.rolling_max(close, n).bfill()
         nday_closing_low = pd.rolling_min(close, n).bfill()
         # Compute price blocks: rolling high low range in block number steps
-        price_blocks = pd.DataFrame()
+        price_blocks = pd.SpareSeries()
         for low, high, in zip(nday_closing_low, nday_closing_high):
             price_blocks = price_blocks.append(pd.DataFrame(np.linspace(low, high, block_num)).T)
         price_blocks = price_blocks.set_index(close.index)
@@ -1578,7 +1578,7 @@ class Asset(object):
         """
         Alias for return_on_investment().
         """
-        return self.return_on_investment(period=periods, freq=freq)
+        return self.return_on_investment(periods=periods, freq=freq)
 
     def compound_annual_growth_rate(self, start=None, end=None):
         """

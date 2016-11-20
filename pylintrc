@@ -261,7 +261,7 @@ ignore-mixin-members=yes
 # List of module names for which member attributes should not be checked
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis
-ignored-modules=
+ignored-modules=numpy
 
 # List of classes names for which member attributes should not be checked
 # (useful for classes with attributes dynamically set).
@@ -274,7 +274,7 @@ zope=no
 # List of members which are set dynamically and missed by pylint inference
 # system, and so shouldn't trigger E0201 when accessed. Python regular
 # expressions are accepted.
-generated-members=REQUEST,acl_users,aq_parent
+generated-members=REQUEST,acl_users,aq_parent,pandas.*
 
 
 [VARIABLES]

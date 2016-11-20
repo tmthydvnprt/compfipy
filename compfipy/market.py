@@ -7,21 +7,18 @@ Operations that work on the whole market, either an index asset or a DataFrame o
 import os
 import sys
 import json
-import time
 import urllib
 import urllib2
 import datetime
-import tabulate
 import StringIO
-import dateutil.easter
+
+import calendar as cal
+import cPickle as pickle
 import numpy as np
 import pandas as pd
-import calendar as cal
 
-try:
-    import cPickle as pickle
-except:
-    import pickle
+import dateutil.easter
+import tabulate
 
 # Download Constants
 # ------------------------------------------------------------------------------------------------------------------------------
@@ -116,7 +113,7 @@ def nyse_holidays(year=datetime.date.today().year):
         special_holidays = [v for v in historical_holidays if v.year == year]
 
         # Alter weekend holidays and add special holidays
-        holidays = map(move_weekend_holiday, typical_holidays) + special_holidays
+        holidays = [move_weekend_holiday(h) for h in typical_holidays] + special_holidays
         holidays.sort()
 
         return holidays
@@ -137,7 +134,7 @@ def closing_time(date=datetime.date.today()):
     """
     return datetime.time(13, 0) if date in nyse_close_early_dates(date.year) else datetime.time(16, 0)
 
-def opening_time(date=datetime.date.today()):
+def opening_time():
     """
     Get opening time of the current date.
     """
@@ -155,15 +152,15 @@ def is_open_on(date=datetime.date.today()):
     """
     return not date.weekday() >= 5 or is_holiday(date)
 
-def is_open_at(datetime=datetime.datetime.today()):
+def is_open_at(dt=datetime.datetime.today()):
     """
     Return boolean if the NYSE is open at a specific time (includes normal trading hours, close early days and holidays).
     """
     # If weekend or holiday
-    if not is_open_on(datetime):
+    if not is_open_on(dt):
         return False
     else:
-        return datetime.time(9, 30) < datetime.time() < closing_time(datetime.date())
+        return datetime.time(9, 30) < dt.time() < closing_time(dt.date())
 
 # Market EOD Data Download Functions
 # ------------------------------------------------------------------------------------------------------------------------------
@@ -181,8 +178,8 @@ def download_all_symbols():
     # Drop Unneccesary Row (File Create Date)
     nasdaq = nasdaq.iloc[:-1]
     # Set Exchange and ETFness
-    nasdaq['ETF']= 'N'
-    nasdaq['Exchange']= 'Q'
+    nasdaq['ETF'] = 'N'
+    nasdaq['Exchange'] = 'Q'
     # Clean Columns
     nasdaq['NASDAQ Symbol'] = nasdaq['Symbol']
 
@@ -212,7 +209,7 @@ def download_all_symbols():
 
     return symbols
 
-def download_google_history(symbols, start, end=(datetime.date.today() - datetime.timedelta(days=1))) :
+def download_google_history(symbols, start, end=(datetime.date.today() - datetime.timedelta(days=1))):
     """
     Download daily symbol history from Google servers for specified range.
     Returns DataFrame with Date, Open, Close, Low, High, Volume.
@@ -231,22 +228,23 @@ def download_google_history(symbols, start, end=(datetime.date.today() - datetim
         }
         url = GOOGLE_URL.format(**url_vars)
         result_string = urllib.urlopen(url).read()
-        if (result_string.find('Not Found') < 0) :
-            data = pd.read_csv(StringIO.StringIO(result_string), index_col=0, na_values=['','-'], parse_dates=True).sort_index()
+        if result_string.find('Not Found') < 0:
+            data = pd.read_csv(StringIO.StringIO(result_string), index_col=0, na_values=['', '-'], parse_dates=True)
+            data = data.sort_index()
             if len(data.index) > 0  and data.index[0].year == start.year:
                 history = data
             break
 
     return history
 
-def download_yahoo_history(symbols, start) :
+def download_yahoo_history(symbols, start):
     """
     Download daily symbol history from Yahoo servers for specified range.
     Returns DataFrame with Date, Open, Close, Low, High, Volume.
     """
 
     # Set up empty DataFrame
-    history = pd.DataFrame({'Open':[],'Close':[],'High':[],'Low':[],'Volume':[]})
+    history = pd.DataFrame({'Open':[], 'Close':[], 'High':[], 'Low':[], 'Volume':[]})
     history.index.name = 'Date'
 
     # Check each exchange, bounce out once found
@@ -257,11 +255,11 @@ def download_yahoo_history(symbols, start) :
         }
         url = YAHOO_URL.format(**url_vars)
         result_string = urllib.urlopen(url).read()
-        if (result_string.find('Not Found') < 0) :
+        if result_string.find('Not Found') < 0:
             data = pd.read_csv(
                 StringIO.StringIO(result_string),
                 index_col=0,
-                na_values=['','-'],
+                na_values=['', '-'],
                 parse_dates=True
             ).sort_index()
             if len(data.index) > 0:
@@ -286,18 +284,18 @@ def log_message(msg, log_location, log=True, display=True):
                     f.write(msg)
             except IOError:
                 pass
-
+# pylint: disable=too-many-arguments,too-many-branches,too-many-statements
 def update_history(
-    symbol_manifest_location='./data/symbols.csv',
-    history_status_location='./data/history.json',
-    log_location='./data/log.txt',
-    history_path='./data/history/{}',
-    source='google',
-    log=True,
-    display=True,
-    trade_days=True,
-    force_day=None
-):
+        symbol_manifest_location='./data/symbols.csv',
+        history_status_location='./data/history.json',
+        log_location='./data/log.txt',
+        history_path='./data/history/{}',
+        source='google',
+        log=True,
+        display=True,
+        trade_days=True,
+        force_day=None
+    ):
     """
     Checks the current history in storage and downloads updates for any incomplete symbol.
 
@@ -603,7 +601,7 @@ def update_history(
         # Write the history status as json
         for location in history_status_location:
             with open(location, 'w') as f:
-                json.dump(history_status, f, indent=4, separators=(',',': '), sort_keys=True)
+                json.dump(history_status, f, indent=4, separators=(',', ': '), sort_keys=True)
 
         # Write the history status as text
         for location in [h.replace('.json', '.txt') for h in history_status_location]:
@@ -612,7 +610,8 @@ def update_history(
     else:
         done = True
         log_message(
-            'Market was not open on {:%Y-%m-%d}. No EOD data available.\nIf initial (historical) download needed, set trade_days to False.\n'.format(request_date),
+            'Market was not open on {:%Y-%m-%d}. No EOD data available.'.format(request_date) +
+            '\nIf initial (historical) download needed, set trade_days to False.\n',
             log_location,
             log,
             display
