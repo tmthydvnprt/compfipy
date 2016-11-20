@@ -310,8 +310,8 @@ def update_history(
         source                   : string identifying data source, can be `'yahoo'` or `'google'`, defaults to `'google'`
         log                      : boolean to toggle update process being logged to a file, defaults to True
         display                  : boolean to toggle update process being displayed on stdout, defaults to True
-        trade_days               : only attempt downloads on trading days
-        force_day                : force a specific end day instead of using yesterday
+        trade_days               : boolean to only attempt downloads on trading days, defaults to True
+        force_day                : datetime.date to force a specific end day instead of using yesterday
 
         Note: symbol_manifest_location, history_status_location, and log_location can also be passed lists of locations to have
         outputs written to multiple places, however this "master" location will only be read from first item in list (`[0]`).
