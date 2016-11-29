@@ -279,6 +279,7 @@ def log_message(msg, log_location, log=True, display=True):
     # Log to file
     if log:
         for location in log_location:
+            location = location.format(datetime.date.today())
             try:
                 with open(location, 'a') as f:
                     f.write(msg)
@@ -288,7 +289,7 @@ def log_message(msg, log_location, log=True, display=True):
 def update_history(
         symbol_manifest_location='./data/symbols.csv',
         history_status_location='./data/history.json',
-        log_location='./data/log.txt',
+        log_location='./data/log_{}.txt',
         history_path='./data/history/{}',
         source='google',
         log=True,
