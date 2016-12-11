@@ -466,7 +466,7 @@ def update_history(
                     # If no end recorded, this is the first data returned, record end and store data
                     if pd.isnull(symbol_manifest.loc[symbol]['End']):
                         symbol_manifest.loc[symbol, 'End'] = data.index[-1].date()
-                        with open(history_path.format(symbol + '.pkl'), 'w') as f:
+                        with open(history_path.format(symbol + '.pkl'), 'wb') as f:
                             pickle.dump(data, f, protocol=0)
                     else:
                         # Get current data
@@ -477,7 +477,7 @@ def update_history(
                         # Make sure dupicate dates are removed
                         history = history[~history.index.duplicated(keep='first')]
                         # Write to disk
-                        with open(history_path.format(symbol + '.pkl'), 'w') as f:
+                        with open(history_path.format(symbol + '.pkl'), 'wb') as f:
                             pickle.dump(history, f, protocol=0)
                     # Record start in manifest
                     symbol_manifest.loc[symbol, 'Start'] = data.index[0].date()
@@ -533,7 +533,7 @@ def update_history(
                         # Make sure dupicate dates are removed
                         history = history[~history.index.duplicated(keep='first')]
                         # Write to disk
-                        with open(history_path.format(symbol + '.pkl'), 'w') as f:
+                        with open(history_path.format(symbol + '.pkl'), 'wb') as f:
                             pickle.dump(history, f, protocol=0)
 
                         # Record last ending in manifest (use last non-NaN price date)
