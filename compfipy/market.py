@@ -2,6 +2,11 @@
 market.py
 
 Operations that work on the whole market, either an index asset or a DataFrame of individual assets.
+
+Symbol Lists are downloaded from NASDAQ FTP, ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqlisted.txt and
+ftp://ftp.nasdaqtrader.com/SymbolDirectory/otherlisted.txt The file definition is located at
+http://www.nasdaqtrader.com/trader.aspx?id=symboldirdefs.
+
 """
 
 import os
