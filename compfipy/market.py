@@ -3,9 +3,17 @@ market.py
 
 Operations that work on the whole market, either an index asset or a DataFrame of individual assets.
 
-Symbol Lists are downloaded from NASDAQ FTP, ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqlisted.txt and
-ftp://ftp.nasdaqtrader.com/SymbolDirectory/otherlisted.txt The file definition is located at
-http://www.nasdaqtrader.com/trader.aspx?id=symboldirdefs.
+Symbol Lists are downloaded from NASDAQ's FTP
+    ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqlisted.txt
+    ftp://ftp.nasdaqtrader.com/SymbolDirectory/otherlisted.txt
+
+The symbol file definitions are located at
+    http://www.nasdaqtrader.com/trader.aspx?id=symboldirdefs
+
+Sector classification is downloaded from NASDAQ as well
+    http://www.nasdaq.com/screening/companies-by-name.aspx?letter=0&exchange=nasdaq&render=download
+    http://www.nasdaq.com/screening/companies-by-name.aspx?letter=0&exchange=nyse&render=download
+    http://www.nasdaq.com/screening/companies-by-name.aspx?letter=0&exchange=amex&render=download
 
 """
 
@@ -33,6 +41,8 @@ EXCHANGES = {'', 'NYSE:', 'NASDAQ:', 'NYSEMKT:', 'NYSEARCA:'}
 NASDAQ_URL = 'ftp://ftp.nasdaqtrader.com/SymbolDirectory/'
 NASDAQ_FILE = 'nasdaqlisted.txt'
 OTHERS_FILE = 'otherlisted.txt'
+NASDAQ_SECTOR_URL = 'http://www.nasdaq.com/screening/companies-by-name.aspx?letter=0&exchange={}&render=download'
+NASDAQ_SECTOR_EX = ['nasdaq', 'nyse', 'amex']
 COLUMN_ORDER = ['Symbol', 'Security Name', 'Exchange', 'ETF', 'NASDAQ Symbol', 'Test Issue']
 EXCHANGE_ABBR = {
     'Q' : 'NASDAQ',
@@ -174,6 +184,24 @@ def download_all_symbols():
     Download current symbols from NASDAQ server, return as DataFrame.
     """
 
+    def parse_market_cap(x):
+        try:
+            if x == 'n/a':
+                return None
+            elif x.startswith('$'):
+                if x.endswith('T'):
+                    return float(x[1:-1]) * 1e12
+                if x.endswith('B'):
+                    return float(x[1:-1]) * 1e9
+                elif x.endswith('M'):
+                    return float(x[1:-1]) * 1e6
+                else:
+                    return float(x[1:])
+            else:
+                return x
+        except:
+            return x
+
     # Get NASDAQ symbols
     nasdaq_text = urllib2.urlopen(NASDAQ_URL + NASDAQ_FILE).read()
     # Process NASDAQ symbols
@@ -212,7 +240,22 @@ def download_all_symbols():
     # Drop Nasdaq test stock symbols (experimentally found)
     symbols = symbols.drop(['ZJZZT', 'ZVZZC', 'ZVZZT', 'ZWZZT', 'ZXZZT', 'ZXYZ.A'])
 
-    return symbols
+    # Get sector classifications for each exchange and append to dataframe
+    nasdaq_sectors = pd.DataFrame()
+    for exchange in NASDAQ_SECTOR_EX:
+        nasdaq_sector_text = urllib2.urlopen(NASDAQ_SECTOR_URL.format(exchange)).read()
+        nasdaq_sectors = nasdaq_sectors.append(pd.read_csv(StringIO.StringIO(nasdaq_sector_text)))
+
+    # Drop unnecessary Columns
+    nasdaq_sectors = nasdaq_sectors.drop(['Name', 'IPOyear', 'LastSale', 'Summary Quote', 'Unnamed: 8'], 1)
+    # Use the symbol as the index
+    nasdaq_sectors = nasdaq_sectors.set_index('Symbol')
+    # Parse Market Cap into a float
+    nasdaq_sectors['MarketCap'] = nasdaq_sectors['MarketCap'].apply(parse_market_cap)
+    # Sort the index
+    nasdaq_sectors = nasdaq_sectors.sort_index()
+
+    return symbols.join(nasdaq_sectors)
 
 def download_google_history(symbols, start, end=(datetime.date.today() - datetime.timedelta(days=1))):
     """
