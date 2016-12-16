@@ -468,7 +468,7 @@ def update_history(
             # Read from disk
             #                      0,            1,       2,     3,       4,  5,        6,    7,  8,      9,     10
             # Symbol Columns: Symbol,Security Name,Exchange,Sector,industry,ETF,MarketCap,Start,End,Attempt,Current
-            symbol_manifest = pd.read_csv(symbol_manifest_location[0], index_col=0, parse_dates=[8, 9, 10])
+            symbol_manifest = pd.read_csv(symbol_manifest_location[0], index_col=0, parse_dates=[7, 8, 9])
 
             # Build Mode: If past symbol history is not complete, incrementally download history backwardsm
             incomplete_history = symbol_manifest[~symbol_manifest['Current']]
