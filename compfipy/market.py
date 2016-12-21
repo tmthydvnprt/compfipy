@@ -576,8 +576,13 @@ def update_history(
                     # If that date range returned data
                     if not data.empty:
                         # Get current data
-                        with open(history_path.format(symbol + '.pkl'), 'r') as f:
-                            history = pickle.load(f)
+                        try:
+                            with open(history_path.format(symbol + '.pkl'), 'r') as f:
+                                history = pickle.load(f)
+                        except:
+                            # Set up empty DataFrame
+                            history = pd.DataFrame({'Open':[], 'Close':[], 'High':[], 'Low':[], 'Volume':[]})
+                            history.index.name = 'Date'
                         # Append data
                         history = history.append(data).sort_index()
                         # Make sure dupicate dates are removed
