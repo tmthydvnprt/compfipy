@@ -165,7 +165,7 @@ def is_open_on(date=datetime.date.today()):
     """
     Return boolean if NYSE is open on this date (not weekend or holiday).
     """
-    return not date.weekday() >= 5 or is_holiday(date)
+    return not (date.weekday() >= 5 or is_holiday(date))
 
 def is_open_at(dt=datetime.datetime.today()):
     """
