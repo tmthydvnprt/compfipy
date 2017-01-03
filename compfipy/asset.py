@@ -541,21 +541,21 @@ class Asset(object):
         """
         Wrapper for pandas plot().
         """
-        plt.figure()
-        self.data[['Open', 'Close', 'High', 'Low']].plot(figsize=(16, 4), title='{} OCHL Price'.format(self.symbol.upper()))
+        plt.figure();
+        self.data[['Open', 'Close', 'High', 'Low']].plot(figsize=(16, 4), title='{} OCHL Price'.format(self.symbol.upper()));
 
-        plt.figure()
-        self.data[['Volume']].plot(figsize=(16, 4), title='{} Volume'.format(self.symbol.upper()))
+        plt.figure();
+        self.data[['Volume']].plot(figsize=(16, 4), title='{} Volume'.format(self.symbol.upper()));
 
-        plt.figure()
-        ax3 = (100.0 * self.returns()).hist(figsize=(16, 4), bins=100, normed=1)
-        ax3.set_title('{} Daily Return Distribution'.format('A'))
-        (100.0 * self.returns()).plot(kind='kde')
+        plt.figure();
+        ax3 = (100.0 * self.returns()).hist(figsize=(16, 4), bins=100, normed=1);
+        (100.0 * self.returns()).plot(kind='kde', ax=ax3);
+        ax3.set_title('{} Daily Return Distribution'.format(self.symbol.upper()));
 
-        plt.figure()
-        ax4 = (100.0 * self.returns(freq='M')).hist(figsize=(16, 4), bins=100, normed=1)
-        ax4.set_title('{} Monthly Return Distribution'.format('A'))
-        (100.0 * self.returns(freq='M')).plot(kind='kde')
+        plt.figure();
+        ax4 = (100.0 * self.returns(freq='M')).hist(figsize=(16, 4), bins=100, normed=1);
+        (100.0 * self.returns(freq='M')).plot(kind='kde', ax=ax4);
+        ax4.set_title('{} Monthly Return Distribution'.format(self.symbol.upper()));
 
     def describe(self):
         """
