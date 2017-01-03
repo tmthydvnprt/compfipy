@@ -3,9 +3,15 @@ compfipy
 I: 13, 0: Locally disabling too-many-instance-attributes (R0902) (locally-disabled)
 I: 13, 0: Locally disabling too-many-arguments (R0913) (locally-disabled)
 ************* Module compfipy.market
-I:287, 0: Locally disabling too-many-arguments (R0913) (locally-disabled)
-I:287, 0: Locally disabling too-many-branches (R0912) (locally-disabled)
-I:287, 0: Locally disabling too-many-statements (R0915) (locally-disabled)
+I:220, 0: Locally disabling bare-except (W0702) (locally-disabled)
+I:237, 0: Locally enabling bare-except (W0702) (locally-enabled)
+I:278, 0: Locally disabling redefined-variable-type (R0204) (locally-disabled)
+I:283, 0: Locally enabling redefined-variable-type (R0204) (locally-enabled)
+I:372, 0: Locally disabling too-many-arguments (R0913) (locally-disabled)
+I:372, 0: Locally disabling too-many-branches (R0912) (locally-disabled)
+I:372, 0: Locally disabling too-many-statements (R0915) (locally-disabled)
+I:615, 0: Locally disabling bare-except (W0702) (locally-disabled)
+I:623, 0: Locally enabling bare-except (W0702) (locally-enabled)
 ************* Module compfipy.asset
 I:  1, 0: Locally disabling too-many-public-methods (R0904) (locally-disabled)
 I:111, 0: Locally disabling line-too-long (C0301) (locally-disabled)
@@ -16,7 +22,7 @@ I:401, 0: Locally enabling too-many-statements (R0915) (locally-enabled)
 
 Report
 ======
-1364 statements analysed.
+1413 statements analysed.
 
 Statistics by type
 ------------------
@@ -30,7 +36,7 @@ Statistics by type
 +---------+-------+-----------+-----------+------------+---------+
 |method   |147    |147        |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|function |50     |50         |=          |100.00      |0.00     |
+|function |52     |52         |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
 
 
@@ -39,6 +45,8 @@ External dependencies
 ---------------------
 ::
 
+    compfipy 
+      \-market (compfipy.models)
     dateutil 
       \-easter (compfipy.market)
     matplotlib 
@@ -57,13 +65,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |1552   |49.70 |1552     |=          |
+|code      |1604   |49.81 |1604     |=          |
 +----------+-------+------+---------+-----------+
-|docstring |1023   |32.76 |1023     |=          |
+|docstring |1042   |32.36 |1042     |=          |
 +----------+-------+------+---------+-----------+
-|comment   |194    |6.21  |194      |=          |
+|comment   |213    |6.61  |211      |+2.00      |
 +----------+-------+------+---------+-----------+
-|empty     |354    |11.34 |354      |=          |
+|empty     |361    |11.21 |361      |=          |
 +----------+-------+------+---------+-----------+
 
 
@@ -89,7 +97,7 @@ Messages by category
 +===========+=======+=========+===========+
 |convention |0      |0        |=          |
 +-----------+-------+---------+-----------+
-|refactor   |0      |0        |=          |
+|refactor   |0      |1        |-1.00      |
 +-----------+-------+---------+-----------+
 |warning    |0      |0        |=          |
 +-----------+-------+---------+-----------+
@@ -104,14 +112,14 @@ Messages
 +-----------------+------------+
 |message id       |occurrences |
 +=================+============+
-|locally-disabled |8           |
+|locally-disabled |11          |
 +-----------------+------------+
-|locally-enabled  |2           |
+|locally-enabled  |5           |
 +-----------------+------------+
 
 
 
 Global evaluation
 -----------------
-Your code has been rated at 10.00/10 (previous run: 10.00/10, +0.00)
+Your code has been rated at 10.00/10 (previous run: 9.99/10, +0.01)
 

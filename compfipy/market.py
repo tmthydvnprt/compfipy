@@ -58,6 +58,8 @@ def next_open_day(date=datetime.date.today()):
     """
     Find the next date the NYSE is open.
     """
+    # coerce datetimes to dates
+    date = date.date() if isinstance(date, datetime.datetime) else date
     # Add one day to current date
     date = date + datetime.timedelta(days=1)
     # Continue adding days until the market is open
@@ -159,12 +161,16 @@ def is_holiday(date=datetime.date.today()):
     """
     Return boolean if date is a NYSE holiday.
     """
+    # coerce datetimes to dates
+    date = date.date() if isinstance(date, datetime.datetime) else date
     return date in nyse_holidays(date.year)
 
 def is_open_on(date=datetime.date.today()):
     """
     Return boolean if NYSE is open on this date (not weekend or holiday).
     """
+    # coerce datetimes to dates
+    date = date.date() if isinstance(date, datetime.datetime) else date
     return not (date.weekday() >= 5 or is_holiday(date))
 
 def is_open_at(dt=datetime.datetime.today()):
@@ -177,6 +183,29 @@ def is_open_at(dt=datetime.datetime.today()):
     else:
         return datetime.time(9, 30) < dt.time() < closing_time(dt.date())
 
+def date_range(start=datetime.date.today(), end=datetime.date.today(), periods=None):
+    """
+    Generate a DatetimeIndex of market open days for the range specific (start+end or start+periods).
+    """
+    # coerce datetimes to dates
+    start = start.date() if isinstance(start, datetime.datetime) else start
+    end = end.date() if isinstance(end, datetime.datetime) else end
+    dates = []
+    # start from the previous day, because the function used get the next market day....
+    current_date = start - datetime.timedelta(days=1)
+    if periods:
+        for _ in xrange(periods):
+            new_date = next_open_day(current_date)
+            dates.append(new_date)
+            current_date = new_date
+    else:
+        while current_date < end:
+            new_date = next_open_day(current_date)
+            dates.append(new_date)
+            current_date = new_date
+
+    return pd.DatetimeIndex(dates)
+
 # Market EOD Data Download Functions
 # ------------------------------------------------------------------------------------------------------------------------------
 def download_all_symbols():
@@ -185,6 +214,10 @@ def download_all_symbols():
     """
 
     def parse_market_cap(x):
+        """
+        Convert text number notations to floats.
+        """
+        # pylint: disable=bare-except
         try:
             if x == 'n/a':
                 return None
@@ -201,6 +234,7 @@ def download_all_symbols():
                 return x
         except:
             return x
+        # pylint: enable=bare-except
 
     # Get NASDAQ symbols
     nasdaq_text = urllib2.urlopen(NASDAQ_URL + NASDAQ_FILE).read()
@@ -241,10 +275,12 @@ def download_all_symbols():
     symbols = symbols.drop(['ZJZZT', 'ZVZZC', 'ZVZZT', 'ZWZZT', 'ZXZZT', 'ZXYZ.A'])
 
     # Get sector classifications for each exchange and append to dataframe
+    #pylint: disable=redefined-variable-type
     nasdaq_sectors = pd.DataFrame()
     for exchange in NASDAQ_SECTOR_EX:
         nasdaq_sector_text = urllib2.urlopen(NASDAQ_SECTOR_URL.format(exchange)).read()
         nasdaq_sectors = nasdaq_sectors.append(pd.read_csv(StringIO.StringIO(nasdaq_sector_text)))
+    #pylint: enable=redefined-variable-type
 
     # Drop unnecessary Columns
     nasdaq_sectors = nasdaq_sectors.drop(['Name', 'IPOyear', 'LastSale', 'Summary Quote', 'Unnamed: 8'], 1)
@@ -576,6 +612,7 @@ def update_history(
                     # If that date range returned data
                     if not data.empty:
                         # Get current data
+                        # pylint: disable=bare-except
                         try:
                             with open(history_path.format(symbol + '.pkl'), 'r') as f:
                                 history = pickle.load(f)
@@ -583,6 +620,8 @@ def update_history(
                             # Set up empty DataFrame
                             history = pd.DataFrame({'Open':[], 'Close':[], 'High':[], 'Low':[], 'Volume':[]})
                             history.index.name = 'Date'
+                        # pylint: enable=bare-except
+
                         # Append data
                         history = history.append(data).sort_index()
                         # Make sure dupicate dates are removed

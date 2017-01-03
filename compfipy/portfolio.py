@@ -65,7 +65,7 @@ class Portfolio(object):
         self.fees = fees
 
     def summary(self):
-        """ "summarize all the holdings and performance of the portfolio """
+        """ summarize all the holdings and performance of the portfolio """
         pass
 
     def trade(self, symbol='', date=-1, shares=0.0, commission_min=1.0, commission=0.0075):

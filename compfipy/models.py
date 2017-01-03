@@ -11,6 +11,8 @@ import datetime
 import pandas as pd
 import numpy as np
 
+from compfipy import market
+
 # Common conversion functions used across all models
 # ------------------------------------------------------------------------------------------------------------------------------
 def convert_to_returns(log_returns=None):
@@ -79,7 +81,7 @@ def generate_ochlv(prices=None, ochl_mu=0.0, ochl_sigma=0.1, v_mu=100000, v_sigm
     """
     Turn asset price into standard EOD data.
     """
-    date_rng = pd.date_range(datetime.date.today() - datetime.timedelta(days=len(prices)), periods=len(prices), freq='D')
+    date_rng = market.date_range(datetime.date.today(), periods=len(prices))
     ochlv = pd.DataFrame({'Close':prices})
     ochlv['Open'] = prices + prices * np.random.normal(loc=ochl_mu, scale=ochl_sigma, size=prices.shape)
     ochlv['High'] = prices + prices * np.random.normal(loc=ochl_mu, scale=ochl_sigma, size=prices.shape)
