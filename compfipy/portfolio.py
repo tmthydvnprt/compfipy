@@ -24,8 +24,10 @@ Define a specifc group of Assets along with functions that pertain to the portfo
 """
 
 import copy
+import tabulate
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 # General Portfolio Class
 # ------------------------------------------------------------------------------------------------------------------------------
@@ -34,7 +36,9 @@ class Portfolio(object):
     Define a collection of assets with holdings.
     """
 
-    def __init__(self, assets=None, initial_positions=None, init_cash=10000.0):
+    def __init__(self, assets=None, initial_positions=None, init_cash=10000.0, name=''):
+
+        self.name = name
 
         # Create empty tables
         empty_dataframe = pd.DataFrame(
@@ -68,7 +72,29 @@ class Portfolio(object):
         """
         Summarize all the holdings and performance of the portfolio.
         """
-        pass
+
+    def plot(self):
+        """
+        Wrapper for pandas plot().
+        """
+        name = self.name + ' ' if self.name else self.name
+
+        plt.figure()
+        ax = self.close().plot(figsize=(16,6), title='{}Portfolio Asset Prices'.format(name))
+
+        plt.figure()
+        ax = self.returns().plot(figsize=(16,6), title='{}Portfolio Asset Returns'.format(name))
+
+        plt.figure()
+        ax = self.values().plot(figsize=(16,6), title='{}Portfolio Asset Values'.format(name))
+
+        plt.figure()
+        ax = self.total_value().plot(label='Total Asset Value', legend=True, figsize=(16,6), title='{}Portfolio Balances'.format(name))
+        self.total_balance().plot(label='Total Balance', legend=True, ax=ax)
+        self.cash.plot(label='Total Cash', legend=True, ax=ax)
+
+        plt.figure()
+        ax = self.total_return().plot(figsize=(16,6), title='{}Portfolio Total Returns'.format(name))
 
     def trade(self, symbol='', date=-1, shares=0.0, commission_min=1.0, commission=0.0075):
         """
@@ -106,48 +132,47 @@ class Portfolio(object):
 
     def weights(self, date_range=slice(None, None, None)):
         """
-        Return asset weights of portfolio.
+        Return weights of each asset in portfolio.
         """
-        return self.values(date_range=date_range) / self.total_value(date_range=date_range)
+        return self.values(date_range=date_range).div(self.total_value(date_range=date_range), axis=0)
 
     def cost_bases(self, date_range=slice(None, None, None)):
         """
-        Calculate cost basis of assets.
+        Calculate cost basis of each assets.
         """
         costs = self.trades.cumsum() + self.fees.cumsum()
         return costs[date_range]
 
     def gains(self, date_range=slice(None, None, None)):
         """
-        Calculate gain of assets.
+        Calculate gain of each assets.
         """
         return self.values(date_range=date_range) - self.cost_bases(date_range=date_range)
 
     def returns(self, date_range=slice(None, None, None)):
         """
-        Calculate returns of assets.
+        Calculate returns of each assets.
         """
         return 100.0 * self.gains(date_range=date_range) / self.cost_bases(date_range=date_range)
 
     # Calculate Portfolio totals as sums or weighted sums of individual assets
     def total_value(self, date_range=slice(None, None, None)):
         """
-        Calculate portfolio value.
+        Calculate portfolio value (sum of asset values).
         """
         return self.values(date_range=date_range).sum(axis=1)
 
     def total_balance(self, date_range=slice(None, None, None)):
         """
-        Calculate portfolio balance (asset value + cash)"""
+        Calculate portfolio balance (asset values + cash)"""
         return self.total_value(date_range=date_range) + self.cash
 
     def total_cost_basis(self, date_range=slice(None, None, None)):
         """
-        Calculate portfolio cost basis.
+        Calculate portfolio cost basis (sum of asset cost bases).
         """
         return self.cost_bases(date_range=date_range).sum(axis=1)
 
-    # Total Performance
     def total_gain(self, date_range=slice(None, None, None)):
         """
         Calculate portfolio gain.
