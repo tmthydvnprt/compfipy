@@ -3,6 +3,7 @@
 asset.py
 
 Define the an asset class to contain price data and various calculations, measures, and processed versions of data.
+
 """
 
 import datetime
