@@ -31,7 +31,7 @@ import numpy as np
 # ------------------------------------------------------------------------------------------------------------------------------
 class Portfolio(object):
     """
-    define a collection of assets with holdings
+    Define a collection of assets with holdings.
     """
 
     def __init__(self, assets=None, initial_positions=None, init_cash=10000.0):
@@ -65,11 +65,15 @@ class Portfolio(object):
         self.fees = fees
 
     def summary(self):
-        """ summarize all the holdings and performance of the portfolio """
+        """
+        Summarize all the holdings and performance of the portfolio.
+        """
         pass
 
     def trade(self, symbol='', date=-1, shares=0.0, commission_min=1.0, commission=0.0075):
-        """ execute a trade and update positions """
+        """
+        Execute a trade and update positions.
+        """
 
         # Determine price of trade
         trade_price = shares * self.assets[symbol].close[date]
@@ -83,52 +87,75 @@ class Portfolio(object):
 
     # Calculate Asset-wise numbers and statistics
     def close(self, date_range=slice(None, None, None)):
-        """return closing price for each asset"""
+        """
+        Return closing price for each asset.
+        """
         return pd.DataFrame({symbol: asset.close[date_range] for symbol, asset in self.assets.items()})
 
     def pct_change(self, date_range=slice(None, None, None)):
-        """return closing price returns for each asset"""
+        """
+        Return closing price returns for each asset.
+        """
         return 100.0 * self.close(date_range).pct_change()
 
     def values(self, date_range=slice(None, None, None)):
-        """ calculate value of each position (shares * close) """
+        """
+        Calculate value of each position (shares * close).
+        """
         return self.positions[:][date_range] * self.close(date_range)
 
     def weights(self, date_range=slice(None, None, None)):
-        """ return asset weights of portfolio """
+        """
+        Return asset weights of portfolio.
+        """
         return self.values(date_range=date_range) / self.total_value(date_range=date_range)
 
     def cost_bases(self, date_range=slice(None, None, None)):
-        """ calculate cost basis of assets """
+        """
+        Calculate cost basis of assets.
+        """
         costs = self.trades.cumsum() + self.fees.cumsum()
         return costs[date_range]
 
     def gains(self, date_range=slice(None, None, None)):
-        """ calculate gain of assets"""
+        """
+        Calculate gain of assets.
+        """
         return self.values(date_range=date_range) - self.cost_bases(date_range=date_range)
 
     def returns(self, date_range=slice(None, None, None)):
-        """calculate returns of assets"""
+        """
+        Calculate returns of assets.
+        """
         return 100.0 * self.gains(date_range=date_range) / self.cost_bases(date_range=date_range)
 
     # Calculate Portfolio totals as sums or weighted sums of individual assets
     def total_value(self, date_range=slice(None, None, None)):
-        """calculate portfolio value"""
+        """
+        Calculate portfolio value.
+        """
         return self.values(date_range=date_range).sum(axis=1)
 
     def total_balance(self, date_range=slice(None, None, None)):
-        """calculate portfolio balance (asset value + cash)"""
+        """
+        Calculate portfolio balance (asset value + cash)"""
         return self.total_value(date_range=date_range) + self.cash
 
     def total_cost_basis(self, date_range=slice(None, None, None)):
-        """calculate portfolio cost basis"""
+        """
+        Calculate portfolio cost basis.
+        """
         return self.cost_bases(date_range=date_range).sum(axis=1)
 
     # Total Performance
     def total_gain(self, date_range=slice(None, None, None)):
-        """calculate portfolio gain"""
+        """
+        Calculate portfolio gain.
+        """
         return self.gains(date_range=date_range).sum(axis=1)
 
     def total_return(self, date_range=slice(None, None, None)):
-        """calculate portfolio returns"""
+        """
+        Calculate portfolio returns.
+        """
         return (self.weights(date_range=date_range) * self.returns(date_range=date_range)).sum(axis=1)

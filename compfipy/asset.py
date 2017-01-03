@@ -30,79 +30,108 @@ RANK_PERCENTS = [0.3, 0.3, 0.15, 0.15, 0.5, 0.5]
 # General Price Helper Functions
 # ------------------------------------------------------------------------------------------------------------------------------
 def sma(x, n=20):
-    """ return simple moving average pandas data, x, over interval, n."""
+    """
+    Return simple moving average pandas data, x, over interval, n.
+    """
     return pd.rolling_mean(x, n)
 
 def ema(x, n=20):
-    """ return exponential moving average pandas data, x, over interval, n."""
+    """
+    Return exponential moving average pandas data, x, over interval, n.
+    """
     return pd.ewma(x, n)
 
 def calc_returns(x):
     """
-        Calculate arithmetic returns of price series"""
+    Calculate arithmetic returns of price series.
+    """
     return x / x.shift(1) - 1.0
 
 def calc_log_returns(x):
     """
-        Calculate log returns of price series"""
+    Calculate log returns of price series.
+    """
     return np.log(x / x.shift(1))
 
 def calc_price(x, x0=DEFAULT_INITIAL_PRICE):
     """
-        Calculate price from returns series"""
+    Calculate price from returns series.
+    """
     return (x.replace(to_replace=np.nan, value=0) + 1.0).cumprod() * x0
 
 def calc_cagr(x):
-    """ calculate compound annual growth rate"""
+    """
+    Calculate compound annual growth rate.
+    """
     start = x.index[0]
     end = x.index[-1]
     return np.power((x.ix[-1] / x.ix[0]), 1.0 / ((end - start).days / DAYS_IN_YEAR)) - 1.0
 
 def rebase_price(x, x0=DEFAULT_INITIAL_PRICE):
-    """convert a series to another initial price"""
+    """
+    Convert a series to another initial price.
+    """
     return x0 * x / x.ix[0]
 
 # Number Formaters
 # ------------------------------------------------------------------------------------------------------------------------------
 def fmtp(x):
-    """format percent"""
+    """
+    Format as percent.
+    """
     return '-' if np.isnan(x) else format(x, '.2%')
 def fmtpn(x):
-    """format percent, not sign"""
+    """
+    Format as percent without the sign.
+    """
     return '-' if np.isnan(x) else format(100.0 * x, '.2f')
 def fmtn(x):
-    """format float"""
+    """
+    Format as float.
+    """
     return '-' if np.isnan(x) else format(x, '.2f')
 
 # Helper Functions for Fibonacci Code
 # ------------------------------------------------------------------------------------------------------------------------------
 def fibonacci_retracement(price=0.0, lastprice=0.0):
-    """fibonacci_retracement"""
+    """
+    Fibonacci_retracement
+    """
     return price + FIBONACCI_DECIMAL * (lastprice - price)
 
 def fibonacci_arc(price=0.0, lastprice=0.0, days_since_last_price=0, n_days=0):
-    """fibonacci_arc"""
+    """
+    Fibonacci_arc
+    """
     fib_radius = FIBONACCI_DECIMAL * np.sqrt(np.power(lastprice - price, 2) + np.power(days_since_last_price, 2))
     return price - np.sqrt(np.power(fib_radius, 2) - np.power(n_days, 2))
 
 def fibonacci_time(date=datetime.date.today()):
-    """fibonacci_time"""
+    """
+    Fibonacci_time
+    """
     return [date + datetime.timedelta(days=d) for d in FIBONACCI_SEQUENCE]
 
 # General Utility Functions
 # ------------------------------------------------------------------------------------------------------------------------------
 def plot(x, figsize=(16, 4), title=None, logy=False, **kwargs):
-    """plot helper, assumes a pd.Series or pd.DataFrame"""
+    """
+    Plot helper, assumes a pd.Series or pd.DataFrame.
+    """
     title = title if title else 'Price Series'
     x.plot(figsize=figsize, title=title, logy=logy, **kwargs)
 
 def scatter_matrix(x, figsize=(16, 4), title=None, logy=False, **kwargs):
-    """plot helper, assumes a pd.Series or pd.DataFrame"""
+    """
+    Plot helper, assumes a pd.Series or pd.DataFrame.
+    """
     title = title if title else 'Price Scatter Matrix'
     x.scatter_matrix(figsize=figsize, title=title, logy=logy, **kwargs)
 
 def hist(x, figsize=(16, 4), title=None, logy=False, **kwargs):
-    """plot helper, assumes a pd.Series or pd.DataFrame"""
+    """
+    Plot helper, assumes a pd.Series or pd.DataFrame.
+    """
     title = title if title else 'Return Histogram'
     x.hist(figsize=figsize, title=title, logy=logy, **kwargs)
 
@@ -542,21 +571,21 @@ class Asset(object):
         """
         Wrapper for pandas plot().
         """
-        plt.figure();
-        self.data[['Open', 'Close', 'High', 'Low']].plot(figsize=(16, 4), title='{} OCHL Price'.format(self.symbol.upper()));
+        plt.figure()
+        self.data[['Open', 'Close', 'High', 'Low']].plot(figsize=(16, 4), title='{} OCHL Price'.format(self.symbol.upper()))
 
-        plt.figure();
-        self.data[['Volume']].plot(figsize=(16, 4), title='{} Volume'.format(self.symbol.upper()));
+        plt.figure()
+        self.data[['Volume']].plot(figsize=(16, 4), title='{} Volume'.format(self.symbol.upper()))
 
-        plt.figure();
-        ax3 = (100.0 * self.returns()).hist(figsize=(16, 4), bins=100, normed=1);
-        (100.0 * self.returns()).plot(kind='kde', ax=ax3);
-        ax3.set_title('{} Daily Return Distribution'.format(self.symbol.upper()));
+        plt.figure()
+        ax3 = (100.0 * self.returns()).hist(figsize=(16, 4), bins=100, normed=1)
+        (100.0 * self.returns()).plot(kind='kde', ax=ax3)
+        ax3.set_title('{} Daily Return Distribution'.format(self.symbol.upper()))
 
-        plt.figure();
-        ax4 = (100.0 * self.returns(freq='M')).hist(figsize=(16, 4), bins=100, normed=1);
-        (100.0 * self.returns(freq='M')).plot(kind='kde', ax=ax4);
-        ax4.set_title('{} Monthly Return Distribution'.format(self.symbol.upper()));
+        plt.figure()
+        ax4 = (100.0 * self.returns(freq='M')).hist(figsize=(16, 4), bins=100, normed=1)
+        (100.0 * self.returns(freq='M')).plot(kind='kde', ax=ax4)
+        ax4.set_title('{} Monthly Return Distribution'.format(self.symbol.upper()))
 
     def describe(self):
         """
@@ -1503,7 +1532,8 @@ class Asset(object):
     # Return Asset Performance
     # --------------------------------------------------------------------------------------------------------------------------
     def returns(self, periods=1, freq=None):
-        """ Calculate returns of asset over interval period and frequency offset freq string:
+        """
+        Calculate returns of asset over interval period and frequency offset freq string:
         B   business day frequency
         C   custom business day frequency (experimental)
         D   calendar day frequency
