@@ -247,8 +247,8 @@ class Asset(object):
 
         # Sample prices
         daily_price = self.close
-        monthly_price = daily_price.resample('M', 'last')
-        yearly_price = daily_price.resample('A', 'last')
+        monthly_price = daily_price.resample('M').last()
+        yearly_price = daily_price.resample('A').last()
 
         self.stats = {
             'name' : self.symbol,
@@ -759,7 +759,7 @@ class Asset(object):
         draw_down[np.isnan(draw_down)] = -np.Inf
 
         # Get highest high
-        highest_high = pd.expanding_max(draw_down)
+        highest_high = draw_down.expanding().max()
         draw_down = (draw_down / highest_high) - 1.0
         return draw_down
 
@@ -772,9 +772,9 @@ class Asset(object):
 
         # Find start and end time
         start = ~is_zero & is_zero.shift(1)
-        start = list(start[start is True].index)
+        start = list(start[start].index)
         end = is_zero & (~is_zero).shift(1)
-        end = list(end[end is True].index)
+        end = list(end[end].index)
 
         # Handle no ending
         if len(end) is 0:
