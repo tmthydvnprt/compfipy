@@ -6,6 +6,7 @@ The Strategy operates on a portfolio.
 
 """
 
+import copy
 import tabulate
 import numpy as np
 import pandas as pd
@@ -28,14 +29,17 @@ class Strategy(object):
             sell_percent=1.0,
             pm_threshold=0.0,
             pm_order=1.0,
-            risk_free_return=1.0
+            risk_free_return=1.0,
+            name='',
+            quiet=False
         ):
         """
         Create base Strategy object.
         """
 
         # Assumptions
-        self.quiet = False
+        self.name = name
+        self.quiet = quiet
         self.commission_min = commission_min
         self.commission = commission
         self.buy_percent = buy_percent
@@ -45,8 +49,8 @@ class Strategy(object):
         self.risk_free_return = risk_free_return
 
         # Inputs
-        self.portfolio = portfolio
-        self.market = market
+        self.portfolio = copy.deepcopy(portfolio)
+        self.market = copy.deepcopy(market)
 
         # Trading states
         self.long_open = {symbol:False for symbol in portfolio.assets.keys()}
@@ -267,15 +271,15 @@ class Strategy(object):
             # Total or average the trade info for all the trades
             try:
                 wins = len(self.record[symbol].groupby('win/loose').groups['w'])
-            except ValueError:
+            except (ValueError, KeyError):
                 wins = 0
             try:
                 losses = len(self.record[symbol].groupby('win/loose').groups['l'])
-            except ValueError:
+            except (ValueError, KeyError):
                 losses = 0
             try:
                 washes = len(self.record[symbol].groupby('win/loose').groups['-'])
-            except ValueError:
+            except (ValueError, KeyError):
                 washes = 0
             max_drawdown = self.record[symbol]['drawdown'].max()
             average_drawdown = self.record[symbol]['drawdown'].mean()
@@ -320,8 +324,8 @@ class SimpleMovingAverageCrossover(Strategy):
     """
     Buy when sma(fast) crosses above sma(slow), sell when sma(fast) crosses below sma(slow)
     """
-    def __init__(self, portfolio, market, fast, slow):
-        Strategy.__init__(self, portfolio, market)
+    def __init__(self, portfolio, market, fast, slow, *args, **kwargs):
+        Strategy.__init__(self, portfolio, market, *args, **kwargs)
         self.fast = fast
         self.slow = slow
 
@@ -337,6 +341,7 @@ class SimpleMovingAverageCrossover(Strategy):
 
                 # Get today's price
                 price = self.portfolio.assets[symbol].c[date]
+                prices = self.portfolio.assets[symbol].c[:date]
 
                 # Record min, max & drawdown
                 if price > self.max[symbol][0]:
@@ -351,8 +356,8 @@ class SimpleMovingAverageCrossover(Strategy):
                     self.drawdown[symbol] = [price, date]
 
                 # Calculate moving averages
-                sma_fast = np.ma.average(self.portfolio.assets[symbol].c[:date], self.fast).iloc[-2:]
-                sma_slow = np.ma.average(self.portfolio.assets[symbol].c[:date], self.slow).iloc[-2:]
+                sma_fast = prices.rolling(self.fast).mean().iloc[-2:]
+                sma_slow = prices.rolling(self.slow).mean().iloc[-2:]
 
                 # Determine crossover and direction
                 xover = np.sign(np.sign(sma_fast - sma_slow).diff()).iloc[-1]
