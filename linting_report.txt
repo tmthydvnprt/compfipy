@@ -3,18 +3,16 @@ I:  1, 0: Locally disabling too-many-public-methods (R0904) (locally-disabled)
 I:337, 0: Locally disabling too-many-statements (R0915) (locally-disabled)
 I:496, 0: Locally enabling too-many-statements (R0915) (locally-enabled)
 ************* Module compfipy.strategy
-I: 13, 0: Locally disabling too-many-instance-attributes (R0902) (locally-disabled)
-I: 13, 0: Locally disabling too-many-arguments (R0913) (locally-disabled)
+I: 15, 0: Locally disabling too-many-instance-attributes (R0902) (locally-disabled)
+I: 15, 0: Locally disabling too-many-arguments (R0913) (locally-disabled)
 ************* Module compfipy.market
-I:220, 0: Locally disabling bare-except (W0702) (locally-disabled)
-I:237, 0: Locally enabling bare-except (W0702) (locally-enabled)
-I:278, 0: Locally disabling redefined-variable-type (R0204) (locally-disabled)
-I:283, 0: Locally enabling redefined-variable-type (R0204) (locally-enabled)
-I:372, 0: Locally disabling too-many-arguments (R0913) (locally-disabled)
-I:372, 0: Locally disabling too-many-branches (R0912) (locally-disabled)
-I:372, 0: Locally disabling too-many-statements (R0915) (locally-disabled)
-I:615, 0: Locally disabling bare-except (W0702) (locally-disabled)
-I:623, 0: Locally enabling bare-except (W0702) (locally-enabled)
+I:276, 0: Locally disabling redefined-variable-type (R0204) (locally-disabled)
+I:281, 0: Locally enabling redefined-variable-type (R0204) (locally-enabled)
+I:370, 0: Locally disabling too-many-arguments (R0913) (locally-disabled)
+I:370, 0: Locally disabling too-many-branches (R0912) (locally-disabled)
+I:370, 0: Locally disabling too-many-statements (R0915) (locally-disabled)
+I:613, 0: Locally disabling bare-except (W0702) (locally-disabled)
+I:621, 0: Locally enabling bare-except (W0702) (locally-enabled)
 ************* Module compfipy.asset
 I:  1, 0: Locally disabling too-many-public-methods (R0904) (locally-disabled)
 I: 68, 0: Locally disabling line-too-long (C0301) (locally-disabled)
@@ -25,7 +23,7 @@ I:360, 0: Locally enabling too-many-statements (R0915) (locally-enabled)
 
 Report
 ======
-1616 statements analysed.
+1644 statements analysed.
 
 Statistics by type
 ------------------
@@ -37,9 +35,9 @@ Statistics by type
 +---------+-------+-----------+-----------+------------+---------+
 |class    |5      |5          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|method   |158    |158        |=          |100.00      |0.00     |
+|method   |159    |159        |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|function |53     |53         |=          |100.00      |0.00     |
+|function |58     |58         |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
 
 
@@ -69,13 +67,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |1884   |50.32 |1883     |+1.00      |
+|code      |1925   |50.01 |1925     |=          |
 +----------+-------+------+---------+-----------+
-|docstring |1192   |31.84 |1192     |=          |
+|docstring |1212   |31.49 |1212     |=          |
 +----------+-------+------+---------+-----------+
-|comment   |239    |6.38  |239      |=          |
+|comment   |282    |7.33  |282      |=          |
 +----------+-------+------+---------+-----------+
-|empty     |429    |11.46 |429      |=          |
+|empty     |430    |11.17 |430      |=          |
 +----------+-------+------+---------+-----------+
 
 
@@ -99,11 +97,11 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |0      |1        |-1.00      |
+|convention |0      |0        |=          |
 +-----------+-------+---------+-----------+
 |refactor   |0      |0        |=          |
 +-----------+-------+---------+-----------+
-|warning    |0      |1        |-1.00      |
+|warning    |0      |0        |=          |
 +-----------+-------+---------+-----------+
 |error      |0      |0        |=          |
 +-----------+-------+---------+-----------+
@@ -116,14 +114,14 @@ Messages
 +-----------------+------------+
 |message id       |occurrences |
 +=================+============+
-|locally-disabled |13          |
+|locally-disabled |12          |
 +-----------------+------------+
-|locally-enabled  |6           |
+|locally-enabled  |5           |
 +-----------------+------------+
 
 
 
 Global evaluation
 -----------------
-Your code has been rated at 10.00/10 (previous run: 9.99/10, +0.01)
+Your code has been rated at 10.00/10 (previous run: 10.00/10, +0.00)
 
