@@ -14,82 +14,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Constants
-# ------------------------------------------------------------------------------------------------------------------------------
-DEFAULT_INITIAL_PRICE = 100.0
-DAYS_IN_YEAR = 365.25
-DAYS_IN_TRADING_YEAR = 252.0
-MONTHS_IN_YEAR = 12.0
-RISK_FREE_RATE = 0.05
-
-FIBONACCI_DECIMAL = np.array([0, 0.236, 0.382, 0.5, 0.618, 1])
-FIBONACCI_SEQUENCE = [0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233]
-RANK_DAYS_IN_TRADING_YEAR = [200, 125, 50, 20, 3, 14]
-RANK_PERCENTS = [0.3, 0.3, 0.15, 0.15, 0.5, 0.5]
-
-# General Price Helper Functions
-# ------------------------------------------------------------------------------------------------------------------------------
-def sma(x, n=20):
-    """
-    Return simple moving average pandas data, x, over interval, n.
-    """
-    return pd.rolling_mean(x, n)
-
-def ema(x, n=20):
-    """
-    Return exponential moving average pandas data, x, over interval, n.
-    """
-    return pd.ewma(x, n)
-
-def calc_returns(x):
-    """
-    Calculate arithmetic returns of price series.
-    """
-    return x / x.shift(1) - 1.0
-
-def calc_log_returns(x):
-    """
-    Calculate log returns of price series.
-    """
-    return np.log(x / x.shift(1))
-
-def calc_price(x, x0=DEFAULT_INITIAL_PRICE):
-    """
-    Calculate price from returns series.
-    """
-    return (x.replace(to_replace=np.nan, value=0) + 1.0).cumprod() * x0
-
-def calc_cagr(x):
-    """
-    Calculate compound annual growth rate.
-    """
-    start = x.index[0]
-    end = x.index[-1]
-    return np.power((x.ix[-1] / x.ix[0]), 1.0 / ((end - start).days / DAYS_IN_YEAR)) - 1.0
-
-def rebase_price(x, x0=DEFAULT_INITIAL_PRICE):
-    """
-    Convert a series to another initial price.
-    """
-    return x0 * x / x.ix[0]
-
-# Number Formaters
-# ------------------------------------------------------------------------------------------------------------------------------
-def fmtp(x):
-    """
-    Format as percent.
-    """
-    return '-' if np.isnan(x) else format(x, '.2%')
-def fmtpn(x):
-    """
-    Format as percent without the sign.
-    """
-    return '-' if np.isnan(x) else format(100.0 * x, '.2f')
-def fmtn(x):
-    """
-    Format as float.
-    """
-    return '-' if np.isnan(x) else format(x, '.2f')
+from compfipy.util import RISK_FREE_RATE, MONTHS_IN_YEAR, DAYS_IN_YEAR, DAYS_IN_TRADING_YEAR
+from compfipy.util import FIBONACCI_SEQUENCE, FIBONACCI_DECIMAL, RANK_PERCENTS, RANK_DAYS_IN_TRADING_YEAR
+from compfipy.util import calc_returns, calc_cagr, fmtp, fmtn, fmttn, sma, ema
 
 # Helper Functions for Fibonacci Code
 # ------------------------------------------------------------------------------------------------------------------------------
@@ -250,12 +177,13 @@ class Asset(object):
     """
     # pylint: enable=line-too-long
 
-    def __init__(self, symbol='', data=None):
+    def __init__(self, symbol='', data=None, market_cap=1.0):
         """
         Create an asset, with string symbol and pandas.Series of price data.
         """
         self.symbol = symbol
         self.data = data
+        self.market_cap = market_cap
         self.stats = {}
 
     def __str__(self):
@@ -284,6 +212,7 @@ class Asset(object):
             'name' : self.symbol,
             'start': daily_price.index[0],
             'end': daily_price.index[-1],
+            'market_cap' : self.market_cap,
             'yearly_risk_free_return': yearly_risk_free_return,
             'daily_mean': np.nan,
             'daily_vol': np.nan,
@@ -443,6 +372,7 @@ class Asset(object):
             ('daily_sharpe', 'Daily Sharpe', 'n'),
             ('cagr', 'CAGR', 'p'),
             ('max_drawdown', 'Max Drawdown', 'p'),
+            ('market_cap', 'Market Cap', 't'),
             (None, None, None),
             ('mtd', 'MTD', 'p'),
             ('three_month', '3m', 'p'),
@@ -506,6 +436,8 @@ class Asset(object):
                 row.append(fmtp(raw))
             elif f == 'n':
                 row.append(fmtn(raw))
+            elif f == 't':
+                row.append(fmttn(raw))
             elif f == 'pp':
                 row.append(fmtp(raw[0]))
             elif f == 'dt':
@@ -524,8 +456,8 @@ class Asset(object):
         print 'Annual risk-free rate considered: %s' %(fmtp(self.stats['yearly_risk_free_return']))
         print '\nSummary:'
         data = [[fmtp(self.stats['total_return']), fmtn(self.stats['daily_sharpe']),
-                 fmtp(self.stats['cagr']), fmtp(self.stats['max_drawdown'])]]
-        print tabulate.tabulate(data, headers=['Total Return', 'Sharpe', 'CAGR', 'Max Drawdown'])
+                 fmtp(self.stats['cagr']), fmtp(self.stats['max_drawdown']), fmttn(self.stats['market_cap'])]]
+        print tabulate.tabulate(data, headers=['Total Return', 'Sharpe', 'CAGR', 'Max Drawdown', 'Market Cap'])
 
         print '\nAnnualized Returns:'
         data = [[fmtp(self.stats['mtd']), fmtp(self.stats['three_month']), fmtp(self.stats['six_month']),
