@@ -49,7 +49,7 @@ class Strategy(object):
         self.risk_free_return = risk_free_return
 
         # Inputs
-        self.portfolio = copy.deepcopy(portfolio)
+        self.portfolio = portfolio
         self.market = copy.deepcopy(market)
 
         # Trading states
