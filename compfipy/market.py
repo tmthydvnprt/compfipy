@@ -217,14 +217,13 @@ def download_all_symbols():
         """
         Convert text number notations to floats.
         """
-        # pylint: disable=bare-except
         try:
             if x == 'n/a':
                 return None
             elif x.startswith('$'):
                 if x.endswith('T'):
                     return float(x[1:-1]) * 1e12
-                if x.endswith('B'):
+                elif x.endswith('B'):
                     return float(x[1:-1]) * 1e9
                 elif x.endswith('M'):
                     return float(x[1:-1]) * 1e6
@@ -232,9 +231,8 @@ def download_all_symbols():
                     return float(x[1:])
             else:
                 return x
-        except:
+        except ValueError:
             return x
-        # pylint: enable=bare-except
 
     # Get NASDAQ symbols
     nasdaq_text = urllib2.urlopen(NASDAQ_URL + NASDAQ_FILE).read()

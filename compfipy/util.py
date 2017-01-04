@@ -47,7 +47,7 @@ def fmtn(x):
 
 def fmttn(x):
     """
-    Format as "text" float (Thousand, Million, Billion, etc.).
+    Format as text notation float (Thousand, Million, Billion, etc.).
     """
     abs_x = abs(x)
     if np.isnan(x):
@@ -62,6 +62,44 @@ def fmttn(x):
         return '{:0.2f} B'.format(x / 1e9)
     elif abs_x >= 1e12:
         return '{:0.2f} T'.format(x / 1e12)
+
+# Number Parser Functions
+# ------------------------------------------------------------------------------------------------------------------------------
+def prsp(x):
+    """
+    Parse string as percent.
+    """
+    return np.nan if x is '-' else float(x.replace('%', '')) / 100.0
+
+def prspn(x):
+    """
+    Parse string as percent without sign.
+    """
+    return np.nan if x is '-' else float(x) / 100.0
+
+def prsn(x):
+    """
+    Parse string as float.
+    """
+    return np.nan if x is '-' else float(x)
+
+def prstn(x):
+    """
+    Parse text notation string
+    """
+    try:
+        if x.strip().endswith('T'):
+            return float(x[:-1]) * 1e12
+        elif x.strip().endswith('B'):
+            return float(x[:-1]) * 1e9
+        elif x.strip().endswith('M'):
+            return float(x[:-1]) * 1e6
+        elif x.strip().lower().endswith('k'):
+            return float(x[:-1]) * 1e3
+        else:
+            return float(x)
+    except ValueError:
+        return np.nan
 
 # General Price Helper Functions
 # ------------------------------------------------------------------------------------------------------------------------------
@@ -108,3 +146,16 @@ def rebase_price(x, x0=DEFAULT_INITIAL_PRICE):
     Convert a series to another initial price.
     """
     return x0 * x / x.ix[0]
+
+# General Number Helper Functions
+# ------------------------------------------------------------------------------------------------------------------------------
+def scale(x, (xmin, xmax), (ymin, ymax)):
+    """
+    Scale a number from one range to antoher range, clipping values that are out of bounds.
+    """
+    if x < xmin:
+        return ymin
+    elif x > xmin:
+        return ymax
+    else:
+        return ((x - xmin) / (xmax - xmin)) * (ymax - ymin) + ymin
