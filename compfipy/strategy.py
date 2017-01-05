@@ -11,6 +11,8 @@ import tabulate
 import numpy as np
 import pandas as pd
 
+from compfipy.util import fmtp, fmtn, fmttn
+
 # General Strategy Class
 # ------------------------------------------------------------------------------------------------------------------------------
 # pylint: disable=too-many-instance-attributes,too-many-arguments
@@ -47,6 +49,7 @@ class Strategy(object):
         self.pm_threshold = pm_threshold
         self.pm_order = pm_order
         self.risk_free_return = risk_free_return
+        self.performance = {}
 
         # Inputs
         self.portfolio = portfolio
@@ -81,6 +84,7 @@ class Strategy(object):
     def on_date(self, date):
         """
         Called for each date of portfolio data, implements trading logic.
+        The user must override this function.
         """
         pass
 
@@ -215,11 +219,15 @@ class Strategy(object):
         """
         self.short_open[symbol] = True
 
+        return self
+
     def exit_short(self, symbol): #, date, shares
         """
         Exit a short position.
         """
         self.short_open[symbol] = False
+
+        return self
 
     def run(self):
         """
@@ -229,6 +237,8 @@ class Strategy(object):
         for date in self.portfolio.cash.index:
             self.on_date(date)
         self.after_run()
+
+        return self
 
     def before_run(self):
         """
@@ -241,27 +251,101 @@ class Strategy(object):
         """
         Called at the end of run.
         """
+        # Calculate the performance of the strategy
+        self.calc_performance()
         if not self.quiet:
-            print tabulate.tabulate(self.display_data, headers=['trade', 'symbol', 'date', 'price', 'shares', 'value', 'cash'])
+            # Print a table of trades
+            self.display_trades()
+            # Print a summary of the strategy
             print
-            # Calculate the performance of the strategy
-            performance = self.calc_performance()
-            # Make a list of headers
-            assets = [' '] + performance.keys()
-            # Package the performance dict into a list of lists for the tabulate function
-            perf = [performance.values()[0].keys()] \
-                 + [[p for p in asset_performance.values()]
-                    for asset_performance in performance.values()
-                   ]
-            perf = [list(x) for x in zip(*perf)]
-            # Dsiplay a table of the performance
-            print tabulate.tabulate(perf, headers=assets, floatfmt=".2f")
+            self.display_performance()
+
+            # # Package the performance dict into a list of lists for the tabulate function
+            # perf = [performance.values()[0].keys()] \
+            #      + [[p for p in asset_performance.values()]
+            #         for asset_performance in performance.values()
+            #        ]
+            # perf = [list(x) for x in zip(*perf)]
+            # # Dsiplay a table of the performance
+            # print tabulate.tabulate(perf, headers=assets, floatfmt=".2f")
+
+        return self
+
+    def display_trades(self):
+        """
+        Print table of trades.
+        """
+        print tabulate.tabulate(self.display_data, headers=['trade', 'symbol', 'date', 'price', 'shares', 'value', 'cash'])
+        return self
+
+    def display_performance(self):
+        """
+        Print table of performance.
+        """
+        performance = [
+            ('trades', 'number trade', 'n'),
+            ('wins', 'number of wins', 'n'),
+            ('losses', 'number of losses', 'n'),
+            ('washes', 'number of washes', 'n'),
+            (None, None, None),
+            ('profit', 'total profit', 'n'),
+            ('loss', 'total loss', 'n'),
+            ('net_profit', 'net profit', 'n'),
+            ('profit_factor', 'profit factor', 'p'),
+            ('percent_profitable', 'percent profitable', 'p'),
+            ('average_trade_net_profit', 'average trade net profit', 'n'),
+            (None, None, None),
+            ('max_drawdown', 'max drawdown', 'n'),
+            ('average_drawdown', 'average drawdown', 'n'),
+            ('max_drawdown_days', 'max drawdown days', 'n'),
+            ('average_drawdown_days', 'average drawdown days', 'n'),
+            (None, None, None),
+            ('volatility_risk', 'volitiity risk', 'n'),
+            ('beta', 'beta', 'n'),
+            ('lower_partial_moment_risk', 'lower partial moment risk', 'n'),
+            ('t_r', 'treynor ratio', 'n'),
+            ('s_r', 'sharpe ratio', 'n')
+        ]
+
+        data = []
+        # Make a list of headers
+        data.append(['Performance'] + self.performance.keys())
+
+        for k, n, f in performance:
+            # Blank row
+            if k is None:
+                row = [''] * len(data[0])
+                data.append(row)
+                continue
+            # Begin a row
+            row = [n]
+            # Append formatted number to row for each symbol
+            for symbol in self.portfolio.assets.keys():
+                raw = self.performance[symbol][k]
+                if f is None:
+                    row.append(raw)
+                elif f == 'p':
+                    row.append(fmtp(raw))
+                elif f == 'n':
+                    row.append(fmtn(raw))
+                elif f == 't':
+                    row.append(fmttn(raw))
+                elif f == 'pp':
+                    row.append(fmtp(raw[0]))
+                elif f == 'dt':
+                    row.append(raw.strftime('%Y-%m-%d'))
+                else:
+                    print 'bad'
+            data.append(row)
+
+        print tabulate.tabulate(data, headers='firstrow')
+
+        return self
 
     def calc_performance(self):
         """
         Calculate performance of strategy.
         """
-        performance = {}
         for symbol in self.portfolio.assets.keys():
 
             # Total the Performance of all the trades
@@ -294,7 +378,7 @@ class Strategy(object):
             treynor_ratio = (e_r - self.risk_free_return) / beta
             sharpe_ratio = (e_r - self.risk_free_return) / vol_risk
             # Package up the data for each symbol
-            performance[symbol] = {
+            self.performance[symbol] = {
                 'trades': trades,
                 'wins': wins,
                 'losses': losses,
@@ -316,7 +400,7 @@ class Strategy(object):
                 's_r' : sharpe_ratio
             }
 
-        return performance
+        return self
 
 # Specific Strategy Class
 # ------------------------------------------------------------------------------------------------------------------------------

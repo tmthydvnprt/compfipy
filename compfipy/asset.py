@@ -258,13 +258,13 @@ class Asset(object):
         }
 
         if len(daily_price) is 1:
-            return
+            return self
 
         # Stats with daily prices
         r = calc_returns(daily_price)
 
         if len(r) < 4:
-            return
+            return self
 
         self.stats['daily_mean'] = DAYS_IN_TRADING_YEAR * r.mean()
         self.stats['daily_vol'] = np.sqrt(DAYS_IN_TRADING_YEAR) * r.std()
@@ -286,7 +286,7 @@ class Asset(object):
         mr = calc_returns(monthly_price)
 
         if len(mr) < 2:
-            return
+            return self
 
         self.stats['monthly_mean'] = MONTHS_IN_YEAR * mr.mean()
         self.stats['monthly_vol'] = np.sqrt(MONTHS_IN_YEAR) * mr.std()
@@ -312,13 +312,13 @@ class Asset(object):
             self.stats['return_table'][year][13] = np.prod(np.array(months.values()) + 1) - 1.0
 
         if len(mr) < 3:
-            return
+            return self
 
         denominator = daily_price[:daily_price.index[-1] - pd.DateOffset(months=3)]
         self.stats['three_month'] = (daily_price[-1] / denominator[-1]) - 1 if len(denominator) > 0 else np.nan
 
         if len(mr) < 4:
-            return
+            return self
 
         self.stats['monthly_skew'] = mr.skew()
         self.stats['monthly_kurt'] = mr.kurt() if len(mr[(~np.isnan(mr)) & (mr != 0)]) > 0 else np.nan
@@ -330,7 +330,7 @@ class Asset(object):
         yr = calc_returns(yearly_price)
 
         if len(yr) < 2:
-            return
+            return self
 
         self.stats['ytd'] = (daily_price[-1] / yearly_price[-2]) - 1.0
 
@@ -349,14 +349,14 @@ class Asset(object):
         self.stats['twelve_month_win_perc'] = (monthly_price.pct_change(11) > 0).sum() / float(len(monthly_price) - (MONTHS_IN_YEAR - 1.0))
 
         if len(yr) < 4:
-            return
+            return self
 
         self.stats['yearly_skew'] = yr.skew()
         self.stats['yearly_kurt'] = yr.kurt() if len(yr[(~np.isnan(yr)) & (yr != 0)]) > 0 else np.nan
         self.stats['five_year'] = calc_cagr(daily_price[daily_price.index[-1] - pd.DateOffset(years=5):])
         self.stats['ten_year'] = calc_cagr(daily_price[daily_price.index[-1] - pd.DateOffset(years=10):])
 
-        return
+        return self
         # pylint: enable=too-many-statements
 
     def display_stats(self):
@@ -448,6 +448,8 @@ class Asset(object):
 
         print tabulate.tabulate(data, headers='firstrow')
 
+        return self
+
     def summary(self):
         """
         Displays summary of Asset.
@@ -496,6 +498,8 @@ class Asset(object):
         print tabulate.tabulate(data)
 
         self.plot()
+
+        return self
 
     # Class Helper Functions
     # --------------------------------------------------------------------------------------------------------------------------
