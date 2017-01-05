@@ -547,6 +547,8 @@ def update_history(
 
                 # If that date range returned data
                 if not data.empty:
+                    # Assign name attribute to DataFrame
+                    data.name = symbol
                     # If no end recorded, this is the first data returned, record end and store data
                     if pd.isnull(symbol_manifest.loc[symbol]['End']):
                         symbol_manifest.loc[symbol, 'End'] = data.index[-1].date()
@@ -560,6 +562,8 @@ def update_history(
                         history = history.append(data).sort_index()
                         # Make sure dupicate dates are removed
                         history = history[~history.index.duplicated(keep='first')]
+                        # Make sure name is kept
+                        history.name = symbol
                         # Write to disk
                         with open(history_path.format(symbol + '.pkl'), 'wb') as f:
                             pickle.dump(history, f, protocol=0)
