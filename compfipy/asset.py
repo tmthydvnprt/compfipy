@@ -177,11 +177,11 @@ class Asset(object):
     """
     # pylint: enable=line-too-long
 
-    def __init__(self, symbol='', data=None, market_cap=1.0):
+    def __init__(self, data=None, market_cap=1.0):
         """
         Create an asset, with string symbol and pandas.Series of price data.
         """
-        self.symbol = symbol
+        self.symbol = data.index.name
         self.data = data
         self.market_cap = market_cap
         self.stats = {}
