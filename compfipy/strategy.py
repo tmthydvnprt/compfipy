@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from compfipy.util import fmtp, fmtn, fmttn
+from compfipy.asset import Asset
 
 # General Strategy Class
 # ------------------------------------------------------------------------------------------------------------------------------
@@ -24,7 +25,7 @@ class Strategy(object):
     def __init__(
             self,
             portfolio,
-            market,
+            market=None,
             commission_min=1.00,
             commission=0.0075,
             buy_percent=1.0,
@@ -32,16 +33,14 @@ class Strategy(object):
             pm_threshold=0.0,
             pm_order=1.0,
             risk_free_return=1.0,
-            name='',
-            quiet=False
+            name=None
         ):
         """
         Create base Strategy object.
         """
 
         # Assumptions
-        self.name = name
-        self.quiet = quiet
+        self.name = name if name else portfolio.name + ' Strategy'
         self.commission_min = commission_min
         self.commission = commission
         self.buy_percent = buy_percent
@@ -53,7 +52,7 @@ class Strategy(object):
 
         # Inputs
         self.portfolio = portfolio
-        self.market = copy.deepcopy(market)
+        self.market = copy.deepcopy(market) if market else Asset(np.ones(len(self.portfolio.dates)))
 
         # Trading states
         self.long_open = {symbol:False for symbol in portfolio.assets.keys()}
@@ -236,10 +235,10 @@ class Strategy(object):
 
     def run(self):
         """
-        Iterates over data.
+        Iterates over dates.
         """
         self.before_run()
-        for date in self.portfolio.dates
+        for date in self.portfolio.dates:
             self.on_date(date)
         self.after_run()
 
@@ -256,7 +255,8 @@ class Strategy(object):
         """
         Called at the end of run.
         """
-        # Calculate the performance of the strategy
+        # Calculate the performance of the strategy and portfolio
+        self.portfolio.calc_stats()
         self.calc_performance()
 
         return self
