@@ -328,7 +328,9 @@ class Strategy(object):
         Print table of trades.
         """
         print 'Trades:'
-        print tabulate.tabulate(self.display_data, headers=['trade', 'symbol', 'date', 'price', 'shares', 'value', 'cash'])
+        print tabulate.tabulate(
+            self.display_data, headers=['trade', 'symbol', 'date', 'price', 'shares', 'value', 'cash'], floatfmt='0.3f'
+        )
         return self
 
     def display_performance(self):
