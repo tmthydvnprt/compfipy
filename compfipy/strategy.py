@@ -480,6 +480,8 @@ class BuyAndHold(Strategy):
 
                 # Determine the number of shares to buy based on the current price and the available cash
                 shares = (self.buy_percent * self.portfolio.cash[date]) / price
+                # Reduce total cash by cost of desired shares (does not use all cash for making trades...)
+                shares = (self.buy_percent * (self.portfolio.cash[date] - self.calc_fee(shares))) / price
                 # Make the trade
                 self.enter_long(symbol, date, shares)
 
