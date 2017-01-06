@@ -26,8 +26,8 @@ class Strategy(object):
             self,
             portfolio,
             market=None,
-            commission_min=1.00,
-            commission=0.0075,
+            commission_min=5.00,
+            commission_pct=0.0,
             buy_percent=1.0,
             sell_percent=1.0,
             pm_threshold=0.0,
@@ -42,7 +42,7 @@ class Strategy(object):
         # Assumptions
         self.name = name if name else portfolio.name + ' Strategy'
         self.commission_min = commission_min
-        self.commission = commission
+        self.commission_pct = commission_pct
         self.buy_percent = buy_percent
         self.sell_percent = sell_percent
         self.pm_threshold = pm_threshold
@@ -78,7 +78,7 @@ class Strategy(object):
         """
         Calculate the total fees for a given trade of shares.
         """
-        return max(self.commission_min, abs(self.commission * shares))
+        return max(self.commission_min, abs(self.commission_pct * shares))
 
     # Execute Trades
     # --------------------------------------------------------------------------------------------------------------------------
@@ -443,6 +443,8 @@ class SimpleMovingAverageCrossover(Strategy):
                 if xover > 0 and not self.long_open[symbol]:
                     # Determine shares to trade, make the trade, and display message
                     shares = (self.buy_percent * self.portfolio.cash[date]) / price
+                    # Reduce total cash by cost of desired shares (does not use all cash for making trades...)
+                    shares = (self.buy_percent * (self.portfolio.cash[date] - self.calc_fee(shares))) / price
                     self.enter_long(symbol, date, shares)
                     self.display_data.append(
                         ['buy', symbol, str(date.date()), price, shares, price * shares, self.portfolio.cash[date]]
