@@ -94,14 +94,14 @@ class Portfolio(object):
         daily_risk_free_return = (np.power(1 + yearly_risk_free_return, 1.0 / DAYS_IN_TRADING_YEAR) - 1.0) * DAYS_IN_TRADING_YEAR
 
         # Sample prices
-        daily_value = self.total_value()
-        monthly_value = daily_value.resample('M').last()
-        yearly_value = daily_value.resample('A').last()
+        daily_balance = self.total_balance()
+        monthly_balance = daily_balance.resample('M').last()
+        yearly_balance = daily_balance.resample('A').last()
 
         self.stats = {
             'name' : self.name,
-            'start': daily_value.index[0],
-            'end': daily_value.index[-1],
+            'start': daily_balance.index[0],
+            'end': daily_balance.index[-1],
             'market_cap' : self.market_cap().iloc[-1],
             'yearly_risk_free_return': yearly_risk_free_return,
             'daily_mean': np.nan,
@@ -147,11 +147,11 @@ class Portfolio(object):
             'return_table': {}
         }
 
-        if len(daily_value) is 1:
+        if len(daily_balance) is 1:
             return
 
         # Stats with daily prices
-        r = calc_returns(daily_value)
+        r = calc_returns(daily_balance)
 
         if len(r) < 4:
             return
@@ -161,9 +161,9 @@ class Portfolio(object):
         self.stats['daily_sharpe'] = (self.stats['daily_mean'] - daily_risk_free_return) / self.stats['daily_vol']
         self.stats['best_day'] = r.ix[r.idxmax():r.idxmax()]
         self.stats['worst_day'] = r.ix[r.idxmin():r.idxmin()]
-        self.stats['total_return'] = (daily_value[-1] / daily_value[0]) - 1.0
+        self.stats['total_return'] = (daily_balance[-1] / daily_balance[0]) - 1.0
         self.stats['ytd'] = self.stats['total_return']
-        self.stats['cagr'] = calc_cagr(daily_value)
+        self.stats['cagr'] = calc_cagr(daily_balance)
         self.stats['incep'] = self.stats['cagr']
         drawdown_info = self.drawdown_info()
         self.stats['max_drawdown'] = drawdown_info['drawdown'].min()
@@ -173,7 +173,7 @@ class Portfolio(object):
         self.stats['daily_kurt'] = r.kurt() if len(r[(~np.isnan(r)) & (r != 0)]) > 0 else np.nan
 
         # Stats with monthly prices
-        mr = calc_returns(monthly_value)
+        mr = calc_returns(monthly_balance)
 
         if len(mr) < 2:
             return
@@ -183,7 +183,7 @@ class Portfolio(object):
         self.stats['monthly_sharpe'] = (self.stats['monthly_mean'] - monthly_risk_free_return) / self.stats['monthly_vol']
         self.stats['best_month'] = mr.ix[mr.idxmax():mr.idxmax()]
         self.stats['worst_month'] = mr.ix[mr.idxmin():mr.idxmin()]
-        self.stats['mtd'] = (daily_value[-1] / monthly_value[-2]) - 1.0 # -2 because monthly[1] = daily[-1]
+        self.stats['mtd'] = (daily_balance[-1] / monthly_balance[-2]) - 1.0 # -2 because monthly[1] = daily[-1]
         self.stats['pos_month_perc'] = len(mr[mr > 0]) / float(len(mr) - 1.0) # -1 to ignore first NaN
         self.stats['avg_up_month'] = mr[mr > 0].mean()
         self.stats['avg_down_month'] = mr[mr <= 0].mean()
@@ -194,7 +194,7 @@ class Portfolio(object):
             self.stats['return_table'][mi.year][mi.month] = mr[mi]
         fidx = mr.index[0]
         try:
-            self.stats['return_table'][fidx.year][fidx.month] = (float(monthly_value[0]) / daily_value[0]) - 1
+            self.stats['return_table'][fidx.year][fidx.month] = (float(monthly_balance[0]) / daily_balance[0]) - 1
         except ZeroDivisionError:
             self.stats['return_table'][fidx.year][fidx.month] = 0.0
         # Calculate YTD
@@ -204,8 +204,8 @@ class Portfolio(object):
         if len(mr) < 3:
             return
 
-        denominator = daily_value[:daily_value.index[-1] - pd.DateOffset(months=3)]
-        self.stats['three_month'] = (daily_value[-1] / denominator[-1]) - 1 if len(denominator) > 0 else np.nan
+        denominator = daily_balance[:daily_balance.index[-1] - pd.DateOffset(months=3)]
+        self.stats['three_month'] = (daily_balance[-1] / denominator[-1]) - 1 if len(denominator) > 0 else np.nan
 
         if len(mr) < 4:
             return
@@ -213,19 +213,19 @@ class Portfolio(object):
         self.stats['monthly_skew'] = mr.skew()
         self.stats['monthly_kurt'] = mr.kurt() if len(mr[(~np.isnan(mr)) & (mr != 0)]) > 0 else np.nan
 
-        denominator = daily_value[:daily_value.index[-1] - pd.DateOffset(months=6)]
-        self.stats['six_month'] = (daily_value[-1] / denominator[-1]) - 1 if len(denominator) > 0 else np.nan
+        denominator = daily_balance[:daily_balance.index[-1] - pd.DateOffset(months=6)]
+        self.stats['six_month'] = (daily_balance[-1] / denominator[-1]) - 1 if len(denominator) > 0 else np.nan
 
         # Stats with yearly prices
-        yr = calc_returns(yearly_value)
+        yr = calc_returns(yearly_balance)
 
         if len(yr) < 2:
             return
 
-        self.stats['ytd'] = (daily_value[-1] / yearly_value[-2]) - 1.0
+        self.stats['ytd'] = (daily_balance[-1] / yearly_balance[-2]) - 1.0
 
-        denominator = daily_value[:daily_value.index[-1] - pd.DateOffset(years=1)]
-        self.stats['one_year'] = (daily_value[-1] / denominator[-1]) - 1 if len(denominator) > 0 else np.nan
+        denominator = daily_balance[:daily_balance.index[-1] - pd.DateOffset(years=1)]
+        self.stats['one_year'] = (daily_balance[-1] / denominator[-1]) - 1 if len(denominator) > 0 else np.nan
 
         self.stats['yearly_mean'] = yr.mean()
         self.stats['yearly_vol'] = yr.std()
@@ -234,17 +234,17 @@ class Portfolio(object):
         self.stats['worst_year'] = yr.ix[yr.idxmin():yr.idxmin()]
 
         # Annualize stat for over 1 year
-        self.stats['three_year'] = calc_cagr(daily_value[daily_value.index[-1] - pd.DateOffset(years=3):])
+        self.stats['three_year'] = calc_cagr(daily_balance[daily_balance.index[-1] - pd.DateOffset(years=3):])
         self.stats['win_year_perc'] = len(yr[yr > 0]) / float(len(yr) - 1.0)
-        self.stats['twelve_month_win_perc'] = (monthly_value.pct_change(11) > 0).sum() / float(len(monthly_value) - (MONTHS_IN_YEAR - 1.0))
+        self.stats['twelve_month_win_perc'] = (monthly_balance.pct_change(11) > 0).sum() / float(len(monthly_balance) - (MONTHS_IN_YEAR - 1.0))
 
         if len(yr) < 4:
             return
 
         self.stats['yearly_skew'] = yr.skew()
         self.stats['yearly_kurt'] = yr.kurt() if len(yr[(~np.isnan(yr)) & (yr != 0)]) > 0 else np.nan
-        self.stats['five_year'] = calc_cagr(daily_value[daily_value.index[-1] - pd.DateOffset(years=5):])
-        self.stats['ten_year'] = calc_cagr(daily_value[daily_value.index[-1] - pd.DateOffset(years=10):])
+        self.stats['five_year'] = calc_cagr(daily_balance[daily_balance.index[-1] - pd.DateOffset(years=5):])
+        self.stats['ten_year'] = calc_cagr(daily_balance[daily_balance.index[-1] - pd.DateOffset(years=10):])
 
         return
         # pylint: enable=too-many-statements
@@ -342,7 +342,9 @@ class Portfolio(object):
         """
         Summarize all the holdings and performance of the portfolio.
         """
-        print 'Summary of %s from %s - %s' % (self.stats['name'], self.stats['start'], self.stats['end'])
+        print '%s Portfolio' % (self.stats['name'])
+        print '-' * 80
+        print 'Summary from %s to %s' % (self.stats['start'], self.stats['end'])
         print 'Annual risk-free rate considered: %s' %(fmtp(self.stats['yearly_risk_free_return']))
         print '\nSummary:'
         data = [[fmtp(self.stats['total_return']), fmtn(self.stats['daily_sharpe']),
@@ -420,14 +422,13 @@ class Portfolio(object):
 
     # Operate on this portfolio
     # --------------------------------------------------------------------------------------------------------------------------
-    def trade(self, symbol='', date=-1, shares=0.0, commission_min=1.0, commission=0.0075):
+    def trade(self, symbol='', date=-1, shares=0.0, fee=0.0):
         """
         Execute a trade and update positions.
         """
 
         # Determine price of trade
         trade_price = shares * self.assets[symbol].close[date]
-        fee = max(commission_min, abs(commission * shares))
 
         # Update records
         self.cash[date:] = self.cash[date] - trade_price - fee
@@ -571,7 +572,7 @@ class Portfolio(object):
         Calucate the drawdown from the highest high.
         """
         # Don't change original data
-        draw_down = self.total_value()
+        draw_down = self.total_balance()
 
         # Fill missing data
         draw_down = draw_down.ffill()

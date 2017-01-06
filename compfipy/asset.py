@@ -454,7 +454,7 @@ class Asset(object):
         """
         Displays summary of Asset.
         """
-        print 'Summary of %s from %s - %s' % (self.stats['name'], self.stats['start'], self.stats['end'])
+        print 'Summary of %s from %s to %s' % (self.stats['name'], self.stats['start'], self.stats['end'])
         print 'Annual risk-free rate considered: %s' %(fmtp(self.stats['yearly_risk_free_return']))
         print '\nSummary:'
         data = [[fmtp(self.stats['total_return']), fmtn(self.stats['daily_sharpe']),

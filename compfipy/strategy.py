@@ -89,7 +89,7 @@ class Strategy(object):
         # Set trategy state
         self.long_open[symbol] = True
         # Apply trade to portfolio
-        self.portfolio.trade(symbol, date, shares, self.commission_min, self.commission)
+        self.portfolio.trade(symbol, date, shares, self.calc_fee(shares))
 
         # Set min, max & drawdown
         self.max[symbol] = [self.portfolio.assets[symbol].c[date], date]
@@ -139,7 +139,7 @@ class Strategy(object):
         # Set trategy state
         self.long_open[symbol] = False
         # Apply trade to portfolio
-        self.portfolio.trade(symbol, date, -1.0 * shares, self.commission_min, self.commission)
+        self.portfolio.trade(symbol, date, -1.0 * shares, self.calc_fee(shares))
         # Get the last record (should be the trade that entered long)
         i = self.record[symbol].index[-1]
 
@@ -327,6 +327,7 @@ class Strategy(object):
         """
         Print table of trades.
         """
+        print 'Trades:'
         print tabulate.tabulate(self.display_data, headers=['trade', 'symbol', 'date', 'price', 'shares', 'value', 'cash'])
         return self
 
