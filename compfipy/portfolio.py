@@ -48,12 +48,13 @@ class Portfolio(object):
         self.init_cash = init_cash
         self.assets = assets
         self.stats = {}
+        self.dates = assets[assets.keys()[0]].close.index
 
         # Create empty tables
         empty_dataframe = pd.DataFrame(
-            np.zeros((len(assets[assets.keys()[0]].close), len(assets))),
-            columns=[symbol for symbol in assets.keys()],
-            index=assets[assets.keys()[0]].close.index
+            np.zeros((len(self.dates), len(assets))),
+            columns=assets.keys(),
+            index=self.dates
         )
         empty_series = empty_dataframe[empty_dataframe.keys()[0]]
 
@@ -75,258 +76,11 @@ class Portfolio(object):
         self.fees = fees
         self.positions = positions
 
-    def summary(self):
+    def __str__(self):
         """
-        Summarize all the holdings and performance of the portfolio.
+        Return string representation.
         """
-        print 'Summary of %s from %s - %s' % (self.stats['name'], self.stats['start'], self.stats['end'])
-        print 'Annual risk-free rate considered: %s' %(fmtp(self.stats['yearly_risk_free_return']))
-        print '\nSummary:'
-        data = [[fmtp(self.stats['total_return']), fmtn(self.stats['daily_sharpe']),
-                 fmtp(self.stats['cagr']), fmtp(self.stats['max_drawdown']), fmttn(self.stats['market_cap'])]]
-        print tabulate.tabulate(data, headers=['Total Return', 'Sharpe', 'CAGR', 'Max Drawdown', 'Market Cap'])
-
-        print '\nAnnualized Returns:'
-        data = [[fmtp(self.stats['mtd']), fmtp(self.stats['three_month']), fmtp(self.stats['six_month']),
-                 fmtp(self.stats['ytd']), fmtp(self.stats['one_year']), fmtp(self.stats['three_year']),
-                 fmtp(self.stats['five_year']), fmtp(self.stats['ten_year']),
-                 fmtp(self.stats['incep'])]]
-        print tabulate.tabulate(data, headers=['MTD', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', '10Y', 'Incep.'])
-
-        print '\nPeriodic Returns:'
-        data = [
-            ['sharpe', fmtn(self.stats['daily_sharpe']), fmtn(self.stats['monthly_sharpe']), fmtn(self.stats['yearly_sharpe'])],
-            ['mean', fmtp(self.stats['daily_mean']), fmtp(self.stats['monthly_mean']), fmtp(self.stats['yearly_mean'])],
-            ['vol', fmtp(self.stats['daily_vol']), fmtp(self.stats['monthly_vol']), fmtp(self.stats['yearly_vol'])],
-            ['skew', fmtn(self.stats['daily_skew']), fmtn(self.stats['monthly_skew']), fmtn(self.stats['yearly_skew'])],
-            ['kurt', fmtn(self.stats['daily_kurt']), fmtn(self.stats['monthly_kurt']), fmtn(self.stats['yearly_kurt'])],
-            ['best price', fmtp(self.stats['best_day'][0]), fmtp(self.stats['best_month'][0]), fmtp(self.stats['best_year'][0])],
-            ['best time', self.stats['best_day'].index[0].strftime('%Y-%m-%d'), self.stats['best_month'].index[0].strftime('%Y-%m-%d'), \
-                self.stats['best_year'].index[0].strftime('%Y-%m-%d')],
-            ['worst price', fmtp(self.stats['worst_day'][0]), fmtp(self.stats['worst_month'][0]), fmtp(self.stats['worst_year'][0])],
-            ['worst time', self.stats['worst_day'].index[0].strftime('%Y-%m-%d'), self.stats['worst_month'].index[0].strftime('%Y-%m-%d'), \
-                self.stats['worst_year'].index[0].strftime('%Y-%m-%d')]
-            ]
-        print tabulate.tabulate(data, headers=['daily', 'monthly', 'yearly'])
-
-        print '\nDrawdowns:'
-        data = [
-            [fmtp(self.stats['max_drawdown']), fmtp(self.stats['avg_drawdown']),
-             fmtn(self.stats['avg_drawdown_days'])]]
-        print tabulate.tabulate(data, headers=['max', 'avg', '# days'])
-
-        print '\nMisc:'
-        data = [['avg. up month', fmtp(self.stats['avg_up_month'])],
-                ['avg. down month', fmtp(self.stats['avg_down_month'])],
-                ['up year %', fmtp(self.stats['win_year_perc'])],
-                ['12m up %', fmtp(self.stats['twelve_month_win_perc'])]]
-        print tabulate.tabulate(data)
-
-        self.plot()
-
-    def plot(self):
-        """
-        Wrapper for pandas plot().
-        """
-        name = self.name + ' ' if self.name else self.name
-
-        plt.figure()
-        ax = self.close().plot(figsize=(16, 6), title='{}Portfolio Asset Prices'.format(name))
-
-        plt.figure()
-        ax = self.returns().plot(figsize=(16, 6), title='{}Portfolio Asset Returns'.format(name))
-
-        plt.figure()
-        ax = self.values().plot(figsize=(16, 6), title='{}Portfolio Asset Values'.format(name))
-
-        plt.figure()
-        ax = self.total_value().plot(label='Total Asset Value', legend=True, figsize=(16, 6), title='{}Portfolio Balances'.format(name))
-        self.total_balance().plot(label='Total Balance', legend=True, ax=ax)
-        self.cash.plot(label='Total Cash', legend=True, ax=ax)
-
-        plt.figure()
-        ax = self.total_return().plot(figsize=(16, 6), title='{}Portfolio Total Returns'.format(name))
-
-    def trade(self, symbol='', date=-1, shares=0.0, commission_min=1.0, commission=0.0075):
-        """
-        Execute a trade and update positions.
-        """
-
-        # Determine price of trade
-        trade_price = shares * self.assets[symbol].close[date]
-        fee = max(commission_min, abs(commission * shares))
-
-        # Update records
-        self.cash[date:] = self.cash[date] - trade_price - fee
-        self.fees[symbol][date] = fee
-        self.trades[symbol][date] = trade_price
-        self.positions[symbol][date:] = self.positions[symbol][date] + shares
-
-    # Calculate Asset-wise numbers and statistics
-    # --------------------------------------------------------------------------------------------------------------------------
-    def close(self, date_range=slice(None, None, None)):
-        """
-        Return closing price for each asset.
-        """
-        return pd.DataFrame({symbol: asset.close[date_range] for symbol, asset in self.assets.iteritems()})
-
-    def pct_change(self, date_range=slice(None, None, None)):
-        """
-        Return closing price returns for each asset.
-        """
-        return 100.0 * self.close(date_range).pct_change()
-
-    def values(self, date_range=slice(None, None, None)):
-        """
-        Calculate value of each position (shares * close).
-        """
-        return self.positions[:][date_range] * self.close(date_range)
-
-    def weights(self, date_range=slice(None, None, None)):
-        """
-        Return value weight of each asset in portfolio. Alias for self.value_weights().
-        """
-        return self.value_weights(date_range)
-
-    def value_weights(self, date_range=slice(None, None, None)):
-        """
-        Return value weight of each asset in portfolio.
-        """
-        return self.values(date_range).div(self.total_value(date_range), axis=0)
-
-    def share_weights(self, date_range=slice(None, None, None)):
-        """
-        Return share weight of each asset in portfolio.
-        """
-        return self.positions[date_range].div(self.positions[date_range].sum(axis=1), axis=0)
-
-    def cost_bases(self, date_range=slice(None, None, None)):
-        """
-        Calculate cost basis of each assets.
-        """
-        costs = self.trades.cumsum() + self.fees.cumsum()
-        return costs[date_range]
-
-    def gains(self, date_range=slice(None, None, None)):
-        """
-        Calculate gain of each assets.
-        """
-        return self.values(date_range) - self.cost_bases(date_range)
-
-    def returns(self, date_range=slice(None, None, None)):
-        """
-        Calculate returns of each assets.
-        """
-        return 100.0 * self.gains(date_range) / self.cost_bases(date_range)
-
-    def market_caps(self, date_range=slice(None, None, None)):
-        """
-        Return the Market Cap for each asset.
-        TODO: handle real 'non-constant' market cap.
-        """
-        date_range = date_range
-        return pd.Series({symbol: asset.market_cap for symbol, asset in self.assets.iteritems()})
-
-    # Calculate Portfolio totals as sums or weighted sums of individual assets
-    # --------------------------------------------------------------------------------------------------------------------------
-    def total_value(self, date_range=slice(None, None, None)):
-        """
-        Calculate portfolio value (sum of asset values).
-        """
-        return self.values(date_range).sum(axis=1)
-
-    def total_share(self, date_range=slice(None, None, None)):
-        """
-        Calculate portfolio shares (sum of asset shares).
-        """
-        return self.positions[date_range].sum(axis=1)
-
-    def total_balance(self, date_range=slice(None, None, None)):
-        """
-        Calculate portfolio balance (asset values + cash)"""
-        return self.total_value(date_range) + self.cash
-
-    def total_cost_basis(self, date_range=slice(None, None, None)):
-        """
-        Calculate portfolio cost basis (sum of asset cost bases).
-        """
-        return self.cost_bases(date_range).sum(axis=1)
-
-    def total_gain(self, date_range=slice(None, None, None)):
-        """
-        Calculate portfolio gain.
-        """
-        return self.gains(date_range).sum(axis=1)
-
-    def total_return(self, date_range=slice(None, None, None)):
-        """
-        Calculate portfolio returns.
-        """
-        return (self.weights(date_range) * self.returns(date_range)).sum(axis=1)
-
-    def price(self, date_range=slice(None, None, None)):
-        """
-        Calculate the share weighted price of the portfolio.
-        """
-        return (self.close(date_range) * self.share_weights(date_range)).sum(axis=1)
-
-    def market_cap(self, date_range=slice(None, None, None)):
-        """
-        Calculate the share weighted market cap of the portfolio.
-        """
-        return (self.market_caps(date_range) * self.share_weights(date_range)).sum(axis=1)
-
-    def drawdown(self):
-        """
-        Calucate the drawdown from the highest high.
-        """
-        # Don't change original data
-        draw_down = self.total_value()
-
-        # Fill missing data
-        draw_down = draw_down.ffill()
-
-        # Ignore initial NaNs
-        draw_down[np.isnan(draw_down)] = -np.Inf
-
-        # Get highest high
-        highest_high = draw_down.expanding().max()
-        draw_down = (draw_down / highest_high) - 1.0
-        return draw_down
-
-    def drawdown_info(self):
-        """
-        Return table of drawdown data.
-        """
-        drawdown = self.drawdown()
-        is_zero = drawdown == 0
-
-        # Find start and end time
-        start = ~is_zero & is_zero.shift(1)
-        start = list(start[start].index)
-        end = is_zero & (~is_zero).shift(1)
-        end = list(end[end].index)
-
-        # Handle no ending
-        if len(end) is 0:
-            end.append(drawdown.index[-1])
-
-        # Handle startingin drawdown
-        if start[0] > end[0]:
-            start.insert(0, drawdown.index[0])
-
-        # Handle finishing with drawdown
-        if start[-1] > end[-1]:
-            end.append(drawdown.index[-1])
-
-        info = pd.DataFrame({
-            'start': start,
-            'end'  : end,
-            'days' : [(e - s).days for s, e in zip(start, end)],
-            'drawdown':[drawdown[s:e].min() for s, e in zip(start, end)]
-        })
-
-        return info
+        return str(self.name) + '\n' + str(self.assets)
 
     # Summary stats
     # --------------------------------------------------------------------------------------------------------------------------
@@ -583,3 +337,283 @@ class Portfolio(object):
             data.append(row)
 
         print tabulate.tabulate(data, headers='firstrow')
+
+    def summary(self):
+        """
+        Summarize all the holdings and performance of the portfolio.
+        """
+        print 'Summary of %s from %s - %s' % (self.stats['name'], self.stats['start'], self.stats['end'])
+        print 'Annual risk-free rate considered: %s' %(fmtp(self.stats['yearly_risk_free_return']))
+        print '\nSummary:'
+        data = [[fmtp(self.stats['total_return']), fmtn(self.stats['daily_sharpe']),
+                 fmtp(self.stats['cagr']), fmtp(self.stats['max_drawdown']), fmttn(self.stats['market_cap'])]]
+        print tabulate.tabulate(data, headers=['Total Return', 'Sharpe', 'CAGR', 'Max Drawdown', 'Market Cap'])
+
+        print '\nAnnualized Returns:'
+        data = [[fmtp(self.stats['mtd']), fmtp(self.stats['three_month']), fmtp(self.stats['six_month']),
+                 fmtp(self.stats['ytd']), fmtp(self.stats['one_year']), fmtp(self.stats['three_year']),
+                 fmtp(self.stats['five_year']), fmtp(self.stats['ten_year']),
+                 fmtp(self.stats['incep'])]]
+        print tabulate.tabulate(data, headers=['MTD', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', '10Y', 'Incep.'])
+
+        print '\nPeriodic Returns:'
+        data = [
+            ['sharpe', fmtn(self.stats['daily_sharpe']), fmtn(self.stats['monthly_sharpe']), fmtn(self.stats['yearly_sharpe'])],
+            ['mean', fmtp(self.stats['daily_mean']), fmtp(self.stats['monthly_mean']), fmtp(self.stats['yearly_mean'])],
+            ['vol', fmtp(self.stats['daily_vol']), fmtp(self.stats['monthly_vol']), fmtp(self.stats['yearly_vol'])],
+            ['skew', fmtn(self.stats['daily_skew']), fmtn(self.stats['monthly_skew']), fmtn(self.stats['yearly_skew'])],
+            ['kurt', fmtn(self.stats['daily_kurt']), fmtn(self.stats['monthly_kurt']), fmtn(self.stats['yearly_kurt'])],
+            ['best price', fmtp(self.stats['best_day'][0]), fmtp(self.stats['best_month'][0]), fmtp(self.stats['best_year'][0])],
+            ['best time', self.stats['best_day'].index[0].strftime('%Y-%m-%d'), self.stats['best_month'].index[0].strftime('%Y-%m-%d'), \
+                self.stats['best_year'].index[0].strftime('%Y-%m-%d')],
+            ['worst price', fmtp(self.stats['worst_day'][0]), fmtp(self.stats['worst_month'][0]), fmtp(self.stats['worst_year'][0])],
+            ['worst time', self.stats['worst_day'].index[0].strftime('%Y-%m-%d'), self.stats['worst_month'].index[0].strftime('%Y-%m-%d'), \
+                self.stats['worst_year'].index[0].strftime('%Y-%m-%d')]
+            ]
+        print tabulate.tabulate(data, headers=['daily', 'monthly', 'yearly'])
+
+        print '\nDrawdowns:'
+        data = [
+            [fmtp(self.stats['max_drawdown']), fmtp(self.stats['avg_drawdown']),
+             fmtn(self.stats['avg_drawdown_days'])]]
+        print tabulate.tabulate(data, headers=['max', 'avg', '# days'])
+
+        print '\nMisc:'
+        data = [['avg. up month', fmtp(self.stats['avg_up_month'])],
+                ['avg. down month', fmtp(self.stats['avg_down_month'])],
+                ['up year %', fmtp(self.stats['win_year_perc'])],
+                ['12m up %', fmtp(self.stats['twelve_month_win_perc'])]]
+        print tabulate.tabulate(data)
+
+    # Class Helper Functions
+    # --------------------------------------------------------------------------------------------------------------------------
+    def describe(self):
+        """
+        Wrapper for pandas describe().
+        """
+        self.data.describe()
+
+    def plot(self):
+        """
+        Wrapper for pandas plot().
+        """
+        name = self.name + ' ' if self.name else self.name
+
+        plt.figure()
+        ax = self.close().plot(figsize=(16, 6), title='{}Portfolio Asset Prices'.format(name))
+
+        plt.figure()
+        ax = self.returns().plot(figsize=(16, 6), title='{}Portfolio Asset Returns'.format(name))
+
+        plt.figure()
+        ax = self.values().plot(figsize=(16, 6), title='{}Portfolio Asset Values'.format(name))
+
+        plt.figure()
+        ax = self.total_value().plot(label='Total Asset Value', legend=True, figsize=(16, 6), title='{}Portfolio Balances'.format(name))
+        self.total_balance().plot(label='Total Balance', legend=True, ax=ax)
+        self.cash.plot(label='Total Cash', legend=True, ax=ax)
+
+        plt.figure()
+        ax = self.total_return().plot(figsize=(16, 6), title='{}Portfolio Total Returns'.format(name))
+
+        return self
+
+    # Operate on this portfolio
+    # --------------------------------------------------------------------------------------------------------------------------
+    def trade(self, symbol='', date=-1, shares=0.0, commission_min=1.0, commission=0.0075):
+        """
+        Execute a trade and update positions.
+        """
+
+        # Determine price of trade
+        trade_price = shares * self.assets[symbol].close[date]
+        fee = max(commission_min, abs(commission * shares))
+
+        # Update records
+        self.cash[date:] = self.cash[date] - trade_price - fee
+        self.fees[symbol][date] = fee
+        self.trades[symbol][date] = trade_price
+        self.positions[symbol][date:] = self.positions[symbol][date] + shares
+
+        return self
+
+    def deposit(self, amount=0, date=None):
+        """
+        Deposit Cash into this portfolio.
+        """
+        self.cash[date:] += amount
+        return self
+
+    def withdrawal(self, amount=0, date=None):
+        """
+        Withdrawal Cash from this portfolio.
+        """
+        self.cash[date:] -= amount
+        return self
+
+    # Asset-wise numbers and statistics
+    # --------------------------------------------------------------------------------------------------------------------------
+    def close(self, date_range=slice(None, None, None)):
+        """
+        Return closing price for each asset.
+        """
+        return pd.DataFrame({symbol: asset.close[date_range] for symbol, asset in self.assets.iteritems()})
+
+    def pct_change(self, date_range=slice(None, None, None)):
+        """
+        Return closing price returns for each asset.
+        """
+        return 100.0 * self.close(date_range).pct_change()
+
+    def values(self, date_range=slice(None, None, None)):
+        """
+        Calculate value of each position (shares * close).
+        """
+        return self.positions[:][date_range] * self.close(date_range)
+
+    def weights(self, date_range=slice(None, None, None)):
+        """
+        Return value weight of each asset in portfolio. Alias for self.value_weights().
+        """
+        return self.value_weights(date_range)
+
+    def value_weights(self, date_range=slice(None, None, None)):
+        """
+        Return value weight of each asset in portfolio.
+        """
+        return self.values(date_range).div(self.total_value(date_range), axis=0)
+
+    def share_weights(self, date_range=slice(None, None, None)):
+        """
+        Return share weight of each asset in portfolio.
+        """
+        return self.positions[date_range].div(self.positions[date_range].sum(axis=1), axis=0)
+
+    def cost_bases(self, date_range=slice(None, None, None)):
+        """
+        Calculate cost basis of each assets.
+        """
+        costs = self.trades.cumsum() + self.fees.cumsum()
+        return costs[date_range]
+
+    def gains(self, date_range=slice(None, None, None)):
+        """
+        Calculate gain of each assets.
+        """
+        return self.values(date_range) - self.cost_bases(date_range)
+
+    def returns(self, date_range=slice(None, None, None)):
+        """
+        Calculate returns of each assets.
+        """
+        return 100.0 * self.gains(date_range) / self.cost_bases(date_range)
+
+    def market_caps(self, date_range=slice(None, None, None)):
+        """
+        Return the Market Cap for each asset.
+        TODO: handle real 'non-constant' market cap.
+        """
+        date_range = date_range
+        return pd.Series({symbol: asset.market_cap for symbol, asset in self.assets.iteritems()})
+
+    # Portfolio totals
+    # Calculated as sums or weighted sums of individual assets
+    # --------------------------------------------------------------------------------------------------------------------------
+    def total_value(self, date_range=slice(None, None, None)):
+        """
+        Calculate portfolio value (sum of asset values).
+        """
+        return self.values(date_range).sum(axis=1)
+
+    def total_share(self, date_range=slice(None, None, None)):
+        """
+        Calculate portfolio shares (sum of asset shares).
+        """
+        return self.positions[date_range].sum(axis=1)
+
+    def total_balance(self, date_range=slice(None, None, None)):
+        """
+        Calculate portfolio balance (asset values + cash)"""
+        return self.total_value(date_range) + self.cash
+
+    def total_cost_basis(self, date_range=slice(None, None, None)):
+        """
+        Calculate portfolio cost basis (sum of asset cost bases).
+        """
+        return self.cost_bases(date_range).sum(axis=1)
+
+    def total_gain(self, date_range=slice(None, None, None)):
+        """
+        Calculate portfolio gain.
+        """
+        return self.gains(date_range).sum(axis=1)
+
+    def total_return(self, date_range=slice(None, None, None)):
+        """
+        Calculate portfolio returns.
+        """
+        return (self.weights(date_range) * self.returns(date_range)).sum(axis=1)
+
+    def price(self, date_range=slice(None, None, None)):
+        """
+        Calculate the share weighted price of the portfolio.
+        """
+        return (self.close(date_range) * self.share_weights(date_range)).sum(axis=1)
+
+    def market_cap(self, date_range=slice(None, None, None)):
+        """
+        Calculate the share weighted market cap of the portfolio.
+        """
+        return (self.market_caps(date_range) * self.share_weights(date_range)).sum(axis=1)
+
+    def drawdown(self):
+        """
+        Calucate the drawdown from the highest high.
+        """
+        # Don't change original data
+        draw_down = self.total_value()
+
+        # Fill missing data
+        draw_down = draw_down.ffill()
+
+        # Ignore initial NaNs
+        draw_down[np.isnan(draw_down)] = -np.Inf
+
+        # Get highest high
+        highest_high = draw_down.expanding().max()
+        draw_down = (draw_down / highest_high) - 1.0
+        return draw_down
+
+    def drawdown_info(self):
+        """
+        Return table of drawdown data.
+        """
+        drawdown = self.drawdown()
+        is_zero = drawdown == 0
+
+        # Find start and end time
+        start = ~is_zero & is_zero.shift(1)
+        start = list(start[start].index)
+        end = is_zero & (~is_zero).shift(1)
+        end = list(end[end].index)
+
+        # Handle no ending
+        if len(end) is 0:
+            end.append(drawdown.index[-1])
+
+        # Handle startingin drawdown
+        if start[0] > end[0]:
+            start.insert(0, drawdown.index[0])
+
+        # Handle finishing with drawdown
+        if start[-1] > end[-1]:
+            end.append(drawdown.index[-1])
+
+        info = pd.DataFrame({
+            'start': start,
+            'end'  : end,
+            'days' : [(e - s).days for s, e in zip(start, end)],
+            'drawdown':[drawdown[s:e].min() for s, e in zip(start, end)]
+        })
+
+        return info

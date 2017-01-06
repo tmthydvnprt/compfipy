@@ -81,13 +81,8 @@ class Strategy(object):
         """
         return max(self.commission_min, abs(self.commission * shares))
 
-    def on_date(self, date):
-        """
-        Called for each date of portfolio data, implements trading logic.
-        The user must override this function.
-        """
-        pass
-
+    # Execute Trades
+    # --------------------------------------------------------------------------------------------------------------------------
     def enter_long(self, symbol, date, shares):
         """
         Enter a long position.
@@ -229,12 +224,22 @@ class Strategy(object):
 
         return self
 
+    # Operate Strategy
+    # --------------------------------------------------------------------------------------------------------------------------
+    def on_date(self, date):
+        """
+        Called for each date of portfolio data, implements trading logic.
+        The user must override this function.
+        """
+        print 'This is an empty on_date() function The user must override this.'
+        return self
+
     def run(self):
         """
         Iterates over data.
         """
         self.before_run()
-        for date in self.portfolio.cash.index:
+        for date in self.portfolio.dates
             self.on_date(date)
         self.after_run()
 
@@ -253,24 +258,71 @@ class Strategy(object):
         """
         # Calculate the performance of the strategy
         self.calc_performance()
-        if not self.quiet:
-            # Print a table of trades
-            self.display_trades()
-            # Print a summary of the strategy
-            print
-            self.display_performance()
-
-            # # Package the performance dict into a list of lists for the tabulate function
-            # perf = [performance.values()[0].keys()] \
-            #      + [[p for p in asset_performance.values()]
-            #         for asset_performance in performance.values()
-            #        ]
-            # perf = [list(x) for x in zip(*perf)]
-            # # Dsiplay a table of the performance
-            # print tabulate.tabulate(perf, headers=assets, floatfmt=".2f")
 
         return self
 
+    def calc_performance(self):
+        """
+        Calculate performance of strategy.
+        """
+        for symbol in self.portfolio.assets.keys():
+
+            # Total the Performance of all the trades
+            trades = len(self.record[symbol])
+            profit = self.record[symbol]['profit'].sum()
+            loss = self.record[symbol]['loss'].sum()
+            # Total or average the trade info for all the trades
+            try:
+                wins = len(self.record[symbol].groupby('win/loose').groups['w'])
+            except (ValueError, KeyError):
+                wins = 0
+            try:
+                losses = len(self.record[symbol].groupby('win/loose').groups['l'])
+            except (ValueError, KeyError):
+                losses = 0
+            try:
+                washes = len(self.record[symbol].groupby('win/loose').groups['-'])
+            except (ValueError, KeyError):
+                washes = 0
+            max_drawdown = self.record[symbol]['drawdown'].max()
+            average_drawdown = self.record[symbol]['drawdown'].mean()
+            max_drawdown_time = self.record[symbol]['drawdown days'].max()
+            average_drawdown_time = self.record[symbol]['drawdown days'].mean()
+            # Average the risk and market comparisons for all trades
+            vol_risk = self.record[symbol]['volatility'].mean()
+            beta = self.record[symbol]['beta'].mean()
+            lpm_risk = self.record[symbol]['lpm'].mean()
+            e_r = self.record[symbol]['expected_return'].mean()
+            # Calculate Risk measures
+            treynor_ratio = (e_r - self.risk_free_return) / beta
+            sharpe_ratio = (e_r - self.risk_free_return) / vol_risk
+            # Package up the data for each symbol
+            self.performance[symbol] = {
+                'trades': trades,
+                'wins': wins,
+                'losses': losses,
+                'washes': washes,
+                'profit': profit,
+                'loss': loss,
+                'net_profit': profit - loss,
+                'profit_factor': profit / loss if loss != 0 else 1.0,
+                'percent_profitable': wins / trades if trades != 0 else 0.0,
+                'average_trade_net_profit' : (profit - loss) / trades if trades != 0 else 0.0,
+                'max_drawdown' : max_drawdown,
+                'average_drawdown' : average_drawdown,
+                'max_drawdown_days' : max_drawdown_time,
+                'average_drawdown_days' : average_drawdown_time,
+                'volatility_risk' : vol_risk,
+                'beta' : beta,
+                'lower_partial_moment_risk' : lpm_risk,
+                't_r' : treynor_ratio,
+                's_r' : sharpe_ratio
+            }
+
+        return self
+
+    # Display Info
+    # --------------------------------------------------------------------------------------------------------------------------
     def display_trades(self):
         """
         Print table of trades.
@@ -342,66 +394,6 @@ class Strategy(object):
 
         return self
 
-    def calc_performance(self):
-        """
-        Calculate performance of strategy.
-        """
-        for symbol in self.portfolio.assets.keys():
-
-            # Total the Performance of all the trades
-            trades = len(self.record[symbol])
-            profit = self.record[symbol]['profit'].sum()
-            loss = self.record[symbol]['loss'].sum()
-            # Total or average the trade info for all the trades
-            try:
-                wins = len(self.record[symbol].groupby('win/loose').groups['w'])
-            except (ValueError, KeyError):
-                wins = 0
-            try:
-                losses = len(self.record[symbol].groupby('win/loose').groups['l'])
-            except (ValueError, KeyError):
-                losses = 0
-            try:
-                washes = len(self.record[symbol].groupby('win/loose').groups['-'])
-            except (ValueError, KeyError):
-                washes = 0
-            max_drawdown = self.record[symbol]['drawdown'].max()
-            average_drawdown = self.record[symbol]['drawdown'].mean()
-            max_drawdown_time = self.record[symbol]['drawdown days'].max()
-            average_drawdown_time = self.record[symbol]['drawdown days'].mean()
-            # Average the risk and market comparisons for all trades
-            vol_risk = self.record[symbol]['volatility'].mean()
-            beta = self.record[symbol]['beta'].mean()
-            lpm_risk = self.record[symbol]['lpm'].mean()
-            e_r = self.record[symbol]['expected_return'].mean()
-            # Calculate Risk measures
-            treynor_ratio = (e_r - self.risk_free_return) / beta
-            sharpe_ratio = (e_r - self.risk_free_return) / vol_risk
-            # Package up the data for each symbol
-            self.performance[symbol] = {
-                'trades': trades,
-                'wins': wins,
-                'losses': losses,
-                'washes': washes,
-                'profit': profit,
-                'loss': loss,
-                'net_profit': profit - loss,
-                'profit_factor': profit / loss if loss != 0 else 1.0,
-                'percent_profitable': wins / trades if trades != 0 else 0.0,
-                'average_trade_net_profit' : (profit - loss) / trades if trades != 0 else 0.0,
-                'max_drawdown' : max_drawdown,
-                'average_drawdown' : average_drawdown,
-                'max_drawdown_days' : max_drawdown_time,
-                'average_drawdown_days' : average_drawdown_time,
-                'volatility_risk' : vol_risk,
-                'beta' : beta,
-                'lower_partial_moment_risk' : lpm_risk,
-                't_r' : treynor_ratio,
-                's_r' : sharpe_ratio
-            }
-
-        return self
-
 # Specific Strategy Class
 # ------------------------------------------------------------------------------------------------------------------------------
 class SimpleMovingAverageCrossover(Strategy):
@@ -457,7 +449,7 @@ class SimpleMovingAverageCrossover(Strategy):
 
                 # If the crossover goes negative and we have a long position open or we've reached the end of our data and we
                 # are still in a long position
-                elif (xover < 0 and self.long_open[symbol]) or (date == self.portfolio.cash.index[-1] and self.long_open[symbol]):
+                elif (xover < 0 and self.long_open[symbol]) or (date == self.portfolio.dates[-1] and self.long_open[symbol]):
                     # Determine shares to trade, make the trade, and display message
                     shares = self.sell_percent * self.portfolio.positions[symbol][date]
                     self.exit_long(symbol, date, shares)

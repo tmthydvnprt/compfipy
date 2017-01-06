@@ -497,12 +497,26 @@ class Asset(object):
                 ['12m up %', fmtp(self.stats['twelve_month_win_perc'])]]
         print tabulate.tabulate(data)
 
-        self.plot()
-
         return self
 
     # Class Helper Functions
     # --------------------------------------------------------------------------------------------------------------------------
+    def describe(self):
+        """
+        Wrapper for pandas describe().
+        """
+        self.data.describe()
+
+    def time_range(self, start=None, end=datetime.date.today(), freq='B'):
+        """
+        Return a specific time range of the Asset.
+        """
+        if isinstance(start, datetime.date) and isinstance(end, datetime.date):
+            date_range = pd.date_range(start, end, freq=freq)
+        else:
+            date_range = pd.date_range(end - datetime.timedelta(days=start), periods=start, freq=freq)
+            return Asset(self.symbol, self.data.loc[date_range])
+
     def plot(self):
         """
         Wrapper for pandas plot().
@@ -522,22 +536,6 @@ class Asset(object):
         ax4 = (100.0 * self.returns(freq='M')).hist(figsize=(16, 4), bins=100, normed=1)
         (100.0 * self.returns(freq='M')).plot(kind='kde', ax=ax4)
         ax4.set_title('{} Monthly Return Distribution'.format(self.symbol.upper()))
-
-    def describe(self):
-        """
-        Wrapper for pandas describe().
-        """
-        self.data.describe()
-
-    def time_range(self, start=None, end=datetime.date.today(), freq='B'):
-        """
-        Calculate a specific time range of data.
-        """
-        if isinstance(start, datetime.date) and isinstance(end, datetime.date):
-            date_range = pd.date_range(start, end, freq=freq)
-        else:
-            date_range = pd.date_range(end - datetime.timedelta(days=start), periods=start, freq=freq)
-        return Asset(self.symbol, self.data.loc[date_range])
 
     # Bring underlying data to class properties
     # --------------------------------------------------------------------------------------------------------------------------
