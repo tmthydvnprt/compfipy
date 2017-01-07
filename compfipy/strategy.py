@@ -230,7 +230,7 @@ class Strategy(object):
         Called for each date of portfolio data, implements trading logic.
         The user must override this function.
         """
-        print 'This is an empty on_date() function The user must override this.'
+        print 'This is an empty on_date(date={}) function.\nThe user must override this.'.format(date)
         return self
 
     def run(self):

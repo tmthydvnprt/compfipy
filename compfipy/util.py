@@ -17,7 +17,7 @@ DAYS_IN_TRADING_YEAR = 252.0
 MONTHS_IN_YEAR = 12.0
 
 # Percent Constants
-RISK_FREE_RATE = 0.05
+RISK_FREE_RATE = 0.01
 
 # Trading Signal Constants
 FIBONACCI_DECIMAL = np.array([0, 0.236, 0.382, 0.5, 0.618, 1])

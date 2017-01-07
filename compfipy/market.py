@@ -1,3 +1,4 @@
+# pylint: disable=global-statement
 """
 market.py
 
@@ -24,6 +25,7 @@ import urllib
 import urllib2
 import datetime
 import StringIO
+import multiprocessing
 
 import calendar as cal
 import cPickle as pickle
@@ -32,6 +34,21 @@ import pandas as pd
 
 import dateutil.easter
 import tabulate
+
+# Local Data Constants
+# ------------------------------------------------------------------------------------------------------------------------------
+# Has the User set the local location of data?
+DATA_SET = False
+NO_DATA_SET = 'DATA_LOCATION and DATA_SOURCE are not defined. See set locations with set_data_location().'
+# Local top level data location
+DATA_LOCATION = ''
+# Data source (google or yahoo)
+DATA_SOURCE = 'google'
+# Data local filepaths
+SYMBOL_MANIFEST = ''
+HISTORY_STATUS = ''
+LOG_FILE = ''
+HISTORY_PATH = ''
 
 # Download Constants
 # ------------------------------------------------------------------------------------------------------------------------------
@@ -52,7 +69,7 @@ EXCHANGE_ABBR = {
     'Z' : 'BATS'
 }
 
-# Date Helper Functions
+# Market Date Helper Functions
 # ------------------------------------------------------------------------------------------------------------------------------
 def next_open_day(date=datetime.date.today()):
     """
@@ -205,6 +222,76 @@ def date_range(start=datetime.date.today(), end=datetime.date.today(), periods=N
             current_date = new_date
 
     return pd.DatetimeIndex(dates)
+
+# Market EOD Data Access Functions
+# ------------------------------------------------------------------------------------------------------------------------------
+def set_data_location(path='', source='google'):
+    """
+    Define the location of data.
+    """
+    global DATA_SET, DATA_LOCATION, DATA_SOURCE, SYMBOL_MANIFEST, HISTORY_STATUS, LOG_FILE, HISTORY_PATH
+    DATA_LOCATION = path
+    DATA_SOURCE = source
+    SYMBOL_MANIFEST = os.path.join(DATA_LOCATION, 'compfi', DATA_SOURCE + 'data', 'symbols.csv')
+    HISTORY_STATUS = os.path.join(DATA_LOCATION, 'compfi', DATA_SOURCE + 'data', 'history.json')
+    LOG_FILE = os.path.join(DATA_LOCATION, 'compfi', DATA_SOURCE + 'data', 'log.txt')
+    HISTORY_PATH = os.path.join(DATA_LOCATION, 'compfi', DATA_SOURCE + 'data', 'history', '{}')
+    DATA_SET = True
+
+def load_symbols():
+    """
+    Load the manifest of symbols.
+    """
+    if DATA_SET:
+        symbol_manifest = pd.read_csv(SYMBOL_MANIFEST, index_col=0, parse_dates=[7, 8, 9])
+        symbol_manifest['MarketCap'] = symbol_manifest['MarketCap'].fillna(0.0)
+        symbol_manifest.loc[symbol_manifest['Sector'].isnull(), 'Sector'] = 'n/a'
+        symbol_manifest = symbol_manifest.rename(columns={'industry': 'Industry'})
+        return symbol_manifest
+    else:
+        print NO_DATA_SET
+
+def load_pickle(symbol=''):
+    """
+    Load history for symbol from pickle.
+    """
+    if DATA_SET:
+        try:
+            with open(HISTORY_PATH.format(symbol + '.pkl'), 'rb') as f:
+                history = pickle.load(f)
+        except IOError:
+            history = pd.DataFrame()
+        # Make sure the DataFrame is named and time is sorted
+        history = history.sort_index(ascending=True)
+        history.index.name = symbol
+        return history
+    else:
+        print NO_DATA_SET
+
+def load_symbol(symbols=None):
+    """
+    Load a groups of symbols.  Uses multiple cores if available.
+    """
+    if DATA_SET:
+        # If passed a string load one symbol
+        if isinstance(symbols, str) or isinstance(symbols, unicode):
+            return load_pickle(symbols)
+
+        # Or assume it is an array of strings to load multiple in parallel
+        else:
+            # Start Workers
+            p = multiprocessing.Pool()
+            # Read in history
+            universe = p.map(load_pickle, symbols)
+            # Convert to pandas Panel
+            universe = pd.Panel({x.index.name: x for x in universe})
+            # Close Workers
+            p.close()
+            p.join()
+            return universe.squeeze()
+    else:
+        print NO_DATA_SET
+
 
 # Market EOD Data Download Functions
 # ------------------------------------------------------------------------------------------------------------------------------

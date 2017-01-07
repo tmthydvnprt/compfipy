@@ -1,18 +1,20 @@
+************* Module compfipy.strategy
+I: 19, 0: Locally disabling too-many-instance-attributes (R0902) (locally-disabled)
+I: 19, 0: Locally disabling too-many-arguments (R0913) (locally-disabled)
 ************* Module compfipy.portfolio
 I:  1, 0: Locally disabling too-many-public-methods (R0904) (locally-disabled)
-I:337, 0: Locally disabling too-many-statements (R0915) (locally-disabled)
-I:496, 0: Locally enabling too-many-statements (R0915) (locally-enabled)
-************* Module compfipy.strategy
-I: 15, 0: Locally disabling too-many-instance-attributes (R0902) (locally-disabled)
-I: 15, 0: Locally disabling too-many-arguments (R0913) (locally-disabled)
+I:  1, 0: Locally disabling too-many-instance-attributes (R0902) (locally-disabled)
+I: 91, 0: Locally disabling too-many-statements (R0915) (locally-disabled)
+I:250, 0: Locally enabling too-many-statements (R0915) (locally-enabled)
 ************* Module compfipy.market
-I:276, 0: Locally disabling redefined-variable-type (R0204) (locally-disabled)
-I:281, 0: Locally enabling redefined-variable-type (R0204) (locally-enabled)
-I:370, 0: Locally disabling too-many-arguments (R0913) (locally-disabled)
-I:370, 0: Locally disabling too-many-branches (R0912) (locally-disabled)
-I:370, 0: Locally disabling too-many-statements (R0915) (locally-disabled)
-I:613, 0: Locally disabling bare-except (W0702) (locally-disabled)
-I:621, 0: Locally enabling bare-except (W0702) (locally-enabled)
+I:  1, 0: Locally disabling global-statement (W0603) (locally-disabled)
+I:363, 0: Locally disabling redefined-variable-type (R0204) (locally-disabled)
+I:368, 0: Locally enabling redefined-variable-type (R0204) (locally-enabled)
+I:457, 0: Locally disabling too-many-arguments (R0913) (locally-disabled)
+I:457, 0: Locally disabling too-many-branches (R0912) (locally-disabled)
+I:457, 0: Locally disabling too-many-statements (R0915) (locally-disabled)
+I:704, 0: Locally disabling bare-except (W0702) (locally-disabled)
+I:712, 0: Locally enabling bare-except (W0702) (locally-enabled)
 ************* Module compfipy.asset
 I:  1, 0: Locally disabling too-many-public-methods (R0904) (locally-disabled)
 I: 68, 0: Locally disabling line-too-long (C0301) (locally-disabled)
@@ -23,7 +25,7 @@ I:360, 0: Locally enabling too-many-statements (R0915) (locally-enabled)
 
 Report
 ======
-1644 statements analysed.
+1745 statements analysed.
 
 Statistics by type
 ------------------
@@ -35,9 +37,9 @@ Statistics by type
 +---------+-------+-----------+-----------+------------+---------+
 |class    |5      |5          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|method   |159    |159        |=          |100.00      |0.00     |
+|method   |165    |165        |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|function |58     |58         |=          |100.00      |0.00     |
+|function |62     |62         |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
 
 
@@ -67,13 +69,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |1925   |50.01 |1925     |=          |
+|code      |2054   |50.53 |2054     |=          |
 +----------+-------+------+---------+-----------+
-|docstring |1212   |31.49 |1212     |=          |
+|docstring |1243   |30.58 |1243     |=          |
 +----------+-------+------+---------+-----------+
-|comment   |282    |7.33  |282      |=          |
+|comment   |314    |7.72  |313      |+1.00      |
 +----------+-------+------+---------+-----------+
-|empty     |430    |11.17 |430      |=          |
+|empty     |454    |11.17 |454      |=          |
 +----------+-------+------+---------+-----------+
 
 
@@ -101,7 +103,7 @@ Messages by category
 +-----------+-------+---------+-----------+
 |refactor   |0      |0        |=          |
 +-----------+-------+---------+-----------+
-|warning    |0      |0        |=          |
+|warning    |0      |1        |-1.00      |
 +-----------+-------+---------+-----------+
 |error      |0      |0        |=          |
 +-----------+-------+---------+-----------+
@@ -114,7 +116,7 @@ Messages
 +-----------------+------------+
 |message id       |occurrences |
 +=================+============+
-|locally-disabled |12          |
+|locally-disabled |14          |
 +-----------------+------------+
 |locally-enabled  |5           |
 +-----------------+------------+
@@ -123,5 +125,5 @@ Messages
 
 Global evaluation
 -----------------
-Your code has been rated at 10.00/10 (previous run: 10.00/10, +0.00)
+Your code has been rated at 10.00/10 (previous run: 9.99/10, +0.01)
 
