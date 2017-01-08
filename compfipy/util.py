@@ -153,9 +153,16 @@ def scale(x, (xmin, xmax), (ymin, ymax)):
     """
     Scale a number from one range to antoher range, clipping values that are out of bounds.
     """
+    # Ensure everything is a float
+    x = float(x)
+    xmin = float(xmin)
+    xmax = float(xmax)
+    ymin = float(ymin)
+    ymax = float(ymax)
+    # Scale input while handling bounds
     if x < xmin:
         return ymin
-    elif x > xmin:
+    elif x > xmax:
         return ymax
     else:
-        return ((x - xmin) / (xmax - xmin)) * (ymax - ymin) + ymin
+        return ((ymax - ymin) * (x - xmin) / (xmax - xmin)) + ymin
