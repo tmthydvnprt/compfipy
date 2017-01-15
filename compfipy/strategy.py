@@ -11,8 +11,9 @@ import tabulate
 import numpy as np
 import pandas as pd
 
-from compfipy.util import fmtp, fmtn, fmttn
 from compfipy.asset import Asset
+from compfipy.util import COL_DASH_WIDTH
+from compfipy.util import fmtp, fmtn, fmttn
 
 # General Strategy Class
 # ------------------------------------------------------------------------------------------------------------------------------
@@ -40,7 +41,7 @@ class Strategy(object):
         """
 
         # Assumptions
-        self.name = name if name else portfolio.name + ' Strategy'
+        self.name = name if name else portfolio.name
         self.commission_min = commission_min
         self.commission_pct = commission_pct
         self.buy_percent = buy_percent
@@ -59,7 +60,7 @@ class Strategy(object):
         self.short_open = {symbol:False for symbol in portfolio.assets.keys()}
 
         # Keep track of intermidiate results for performance
-        self.display_data = []
+        self.trade_data = []
         recordings = [
             'buy price', 'buy shares', 'buy fees', 'buy date',
             'sell price', 'sell shares', 'sell fees', 'sell date',
@@ -248,7 +249,7 @@ class Strategy(object):
         """
         Called at the start of run.
         """
-        self.display_data = []
+        self.trade_data = []
         return self
 
     def after_run(self):
@@ -268,6 +269,8 @@ class Strategy(object):
         for symbol in self.portfolio.assets.keys():
 
             # Total the Performance of all the trades
+            start = self.portfolio.trades[symbol].index[0]
+            end = self.portfolio.trades[symbol].index[-1]
             trades = len(self.record[symbol])
             profit = self.record[symbol]['profit'].sum()
             loss = self.record[symbol]['loss'].sum()
@@ -298,6 +301,8 @@ class Strategy(object):
             sharpe_ratio = (e_r - self.risk_free_return) / vol_risk
             # Package up the data for each symbol
             self.performance[symbol] = {
+                'start': start,
+                'end': end,
                 'trades': trades,
                 'wins': wins,
                 'losses': losses,
@@ -323,13 +328,46 @@ class Strategy(object):
 
     # Display Info
     # --------------------------------------------------------------------------------------------------------------------------
+    def summary(self):
+        """
+        Summarize the trades and performance of the strategy.
+        """
+        print '%s Portfolio\'s %s Strategy' % (self.portfolio.name, self.name)
+        print '-' * COL_DASH_WIDTH
+
+        self.display_trades()
+
+        for symbol in self.portfolio.assets.keys():
+            perf = self.performance[symbol]
+
+            print '\nSummary for %s from %s (first trade) to %s (last trade)' % (symbol, perf['start'], perf['end'])
+            print '.' * COL_DASH_WIDTH
+            print 'Summary:'
+            data = [[fmtn(perf['trades']), fmtn(perf['wins']), fmtn(perf['losses']), fmtn(perf['washes'])]]
+            print tabulate.tabulate(data, headers=['Total Trades', '# Wins', '# Losses', '# Washes'])
+
+            print '\nPerformance:'
+            data = [[
+                fmtn(perf['profit']), fmtn(perf['loss']), fmtn(perf['net_profit']),
+                fmtp(perf['profit_factor']), fmtp(perf['percent_profitable']), fmtn(perf['average_trade_net_profit'])
+            ]]
+            print tabulate.tabulate(data, headers=['Profit', 'Loss', 'Net Profit', 'Profit Factor', 'Percent Profitable', 'Average Net Profit per Trade'])
+
+            print '\nDrawdown:'
+            data = [[fmtn(perf['max_drawdown']), fmtn(perf['average_drawdown']), fmtn(perf['max_drawdown_days']), fmtn(perf['average_drawdown_days'])]]
+            print tabulate.tabulate(data, headers=['Max', 'Average', 'Max Days', 'Average Days'])
+
+            print '\nRisk:'
+            data = [[fmtn(perf['volatility_risk']), fmtn(perf['beta']), fmtn(perf['lower_partial_moment_risk']), fmtn(perf['t_r']), fmtn(perf['s_r'])]]
+            print tabulate.tabulate(data, headers=['Volatility', 'Beta', 'Lower Partial Moment', 'Treynor Ratio', 'Sharpe Ratio'])
+
     def display_trades(self):
         """
         Print table of trades.
         """
-        print 'Trades:'
+        print '\nTrades:'
         print tabulate.tabulate(
-            self.display_data, headers=['trade', 'symbol', 'date', 'price', 'shares', 'value', 'cash'], floatfmt='0.3f'
+            self.trade_data, headers=['trade', 'symbol', 'date', 'price', 'shares', 'value', 'cash'], floatfmt='0.3f'
         )
         return self
 
@@ -338,6 +376,8 @@ class Strategy(object):
         Print table of performance.
         """
         performance = [
+            ('start', 'Start', 'dt'),
+            ('end', 'End', 'dt'),
             ('trades', 'number trade', 'n'),
             ('wins', 'number of wins', 'n'),
             ('losses', 'number of losses', 'n'),
@@ -448,7 +488,7 @@ class SimpleMovingAverageCrossover(Strategy):
                     # Reduce total cash by cost of desired shares (does not use all cash for making trades...)
                     shares = (self.buy_percent * (self.portfolio.cash[date] - self.calc_fee(shares))) / price
                     self.enter_long(symbol, date, shares)
-                    self.display_data.append(
+                    self.trade_data.append(
                         ['buy', symbol, str(date.date()), price, shares, price * shares, self.portfolio.cash[date]]
                     )
 
@@ -458,7 +498,7 @@ class SimpleMovingAverageCrossover(Strategy):
                     # Determine shares to trade, make the trade, and display message
                     shares = self.sell_percent * self.portfolio.positions[symbol][date]
                     self.exit_long(symbol, date, shares)
-                    self.display_data.append(
+                    self.trade_data.append(
                         ['sell', symbol, str(date.date()), price, shares, price * shares, self.portfolio.cash[date]]
                     )
 
@@ -488,7 +528,7 @@ class BuyAndHold(Strategy):
                 self.enter_long(symbol, date, shares)
 
                 # Print some data to the console
-                self.display_data.append(
+                self.trade_data.append(
                     ['buy', symbol, str(date.date()), price, shares, price * shares, self.portfolio.cash[date]]
                 )
 
@@ -502,7 +542,7 @@ class BuyAndHold(Strategy):
                 self.exit_long(symbol, date, shares)
 
                 # Print some data to the console
-                self.display_data.append(
+                self.trade_data.append(
                     ['sell', symbol, str(date.date()), price, shares, price * shares, self.portfolio.cash[date]]
                 )
 

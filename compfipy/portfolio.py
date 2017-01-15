@@ -31,6 +31,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+from compfipy.util import COL_DASH_WIDTH
 from compfipy.util import RISK_FREE_RATE, MONTHS_IN_YEAR, DAYS_IN_TRADING_YEAR
 from compfipy.util import calc_returns, calc_cagr, fmtp, fmtn, fmttn
 
@@ -343,7 +344,7 @@ class Portfolio(object):
         Summarize all the holdings and performance of the portfolio.
         """
         print '%s Portfolio' % (self.stats['name'])
-        print '-' * 80
+        print '-' * COL_DASH_WIDTH
         print 'Summary from %s to %s' % (self.stats['start'], self.stats['end'])
         print 'Annual risk-free rate considered: %s' %(fmtp(self.stats['yearly_risk_free_return']))
         print '\nSummary:'
@@ -411,7 +412,12 @@ class Portfolio(object):
         ax = self.values().plot(figsize=(16, 6), title='{}Portfolio Asset Values'.format(name))
 
         plt.figure()
-        ax = self.total_value().plot(label='Total Asset Value', legend=True, figsize=(16, 6), title='{}Portfolio Balances'.format(name))
+        ax = self.total_value().plot(
+            label='Total Asset Value',
+            legend=True,
+            figsize=(16, 6),
+            title='{}Portfolio Balances'.format(name)
+        )
         self.total_balance().plot(label='Total Balance', legend=True, ax=ax)
         self.cash.plot(label='Total Cash', legend=True, ax=ax)
 

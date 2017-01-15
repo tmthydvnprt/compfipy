@@ -9,6 +9,8 @@ import pandas as pd
 
 # Constants
 # ------------------------------------------------------------------------------------------------------------------------------
+# Display constants
+COL_DASH_WIDTH = 128
 
 # Time constants
 DEFAULT_INITIAL_PRICE = 100.0
