@@ -8,7 +8,7 @@ import numpy as np
 
 # Typical Financial Calculator Functions
 # ------------------------------------------------------------------------------------------------------------------------------
-def future_vale(pv=100.0, r=0.07, n=1.0, f=1.0):
+def future_value(pv=100.0, r=0.07, n=1.0, f=1.0):
     """
     Calculate the future value of pv present value after compounding for n periods at r rate every f frequency.
     """
